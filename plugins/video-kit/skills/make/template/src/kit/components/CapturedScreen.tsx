@@ -1,4 +1,4 @@
-import { Img, interpolate, staticFile, useCurrentFrame } from 'remotion'
+import { Img, interpolate, staticFile, useCurrentFrame, useVideoConfig } from 'remotion'
 import { easeInOut, progress } from '../motion'
 import { BrowserFrame } from './BrowserFrame'
 import { Cursor } from './Cursor'
@@ -17,7 +17,7 @@ export interface CapturedScreenProps {
   shots: { src: string, at?: number }[]
   /** The captured viewport, in CSS pixels (the plan's viewport). */
   viewport?: { width: number, height: number }
-  /** Width of the window on screen, in video pixels. */
+  /** Width of the window on screen, in video pixels. Defaults to the frame's width less a margin. */
   width?: number
   url?: string
   /** Where the camera looks, keyframe by keyframe; between keys it eases, one move at a time. */
@@ -58,8 +58,10 @@ function framing(camera: CameraKey[], frame: number): { zoom: number, focus: [nu
  * The product's real screens, captured with `render.sh capture`, in a browser window: screenshots
  * swapping at their frames, one camera move at a time, and a cursor that zooms with the screen.
  */
-export function CapturedScreen({ shots, viewport = { width: 1440, height: 900 }, width = 1560, url, camera = [], cursor }: CapturedScreenProps) {
+export function CapturedScreen({ shots, viewport = { width: 1440, height: 900 }, width: ownWidth, url, camera = [], cursor }: CapturedScreenProps) {
   const frame = useCurrentFrame()
+  const video = useVideoConfig()
+  const width = ownWidth ?? Math.min(1560, video.width - 120)
   const height = (width * viewport.height) / viewport.width
   const { zoom, focus } = framing(camera, frame)
   const x = (0.5 - focus[0]) * width * zoom

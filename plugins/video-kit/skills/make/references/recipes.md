@@ -44,8 +44,8 @@ in an assistant), 2–3 true claims about it, read from its code including its l
 | 15–21 s | `PromiseList`, 3 items | the first icon grows into the end card |
 | 21–26 s | `EndCard` | — |
 
-**Gotchas:** claims come from the feature's code, limits included ("never says more than the
-channel may see" only if the code enforces exactly that).
+**Gotchas:** claims come from the feature's code, limits included ("encrypted end to end" only
+if the code does exactly that).
 
 ## UI motion loop (8–15 s, square, for social)
 

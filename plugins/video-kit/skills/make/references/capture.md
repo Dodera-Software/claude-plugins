@@ -2,7 +2,7 @@
 
 The alternative to rebuilding the product's screens in React: screenshots of the real app, running
 on this machine, animated in the video with a browser frame, camera moves and a cursor. Choose it
-only when the person picks "Captured from your running app".
+only when the person picks "Real screenshots of the running app".
 
 ## Tell them what it needs, before anything else
 
@@ -44,11 +44,11 @@ capture doesn't start from zero.
 You start it, with the project's own command, in the background (they may be a developer who
 already has it running: check first, and reuse it). If it needs a first-time setup (installing
 dependencies, creating the database, loading demo data), do that too, following the project's own
-instructions, and tell them in one line what you're doing. **Stop everything you started when the
-capture is done** (dev server, containers the start command brought up), leaving anything that was
-already running alone. Then check it answers
-before capturing: `curl -sk -o /dev/null -w "%{http_code}" <address>` should give 200 or a redirect
-to the login page.
+instructions, and tell them in one line what you're doing. Check it answers before capturing:
+`curl -sk -o /dev/null -w "%{http_code}" <address>` should give 200 or a redirect to the login page.
+
+**Stop everything you started when the capture is done** (dev server, containers the start command
+brought up), leaving anything that was already running alone.
 
 ## Write the plan and capture
 

@@ -1,8 +1,10 @@
 // Runs inside the render image after a render (render.sh calls it):
-//   1. previews: a 1280×720 JPEG thumbnail (what YouTube asks for) from the poster, and the same
-//      image embedded in both MP4s as cover art, for players and file browsers that show it;
-//   2. glitch scan: compares every frame with the one before it and flags single-frame spikes
-//      (3× their neighbours), which read as a flash or a pop.
+//   1. previews: a JPEG thumbnail from the poster, in the video's own shape (1280×720 for wide, which
+//      is what YouTube asks for; 1280×1280 square; 720×1280 tall), embedded in both MP4s as cover
+//      art for players and file browsers that show it. Never stretched to a shape it isn't;
+//   2. glitch scan: compares every frame with the one before it and flags sharp single-frame
+//      spikes (3× the frames around them, and well above both immediate neighbours), which read
+//      as a flash or a pop.
 // Usage: node scripts/finish.mjs <slug>   (reads out/<slug>-4k.mp4, -1080p.mp4 and -poster.png)
 import { spawnSync } from 'node:child_process'
 import { readFileSync, renameSync, rmSync } from 'node:fs'
@@ -31,7 +33,10 @@ function scan(file) {
       return
     }
     const typical = around.sort((a, b) => a - b)[Math.floor(around.length / 2)]
-    if (value > 2 && value > 3 * Math.max(typical, 0.3)) {
+    // A flash jumps and comes straight back, so its immediate neighbours are far lower. Fast but
+    // smooth motion (a flood crossing the frame) rises and falls over several frames: not a glitch.
+    const neighbours = ((values[frame - 1] ?? 0) + (values[frame + 1] ?? 0)) / 2
+    if (value > 2 && value > 3 * Math.max(typical, 0.3) && neighbours < 0.6 * value) {
       pops.push(`frame ${frame + 1} (${((frame + 1) / FPS).toFixed(2)} s): ${value.toFixed(1)} vs ${typical.toFixed(1)} around it`)
     }
   })
@@ -42,7 +47,8 @@ function scan(file) {
 
 function previews(slug) {
   const thumbnail = `out/${slug}-thumbnail.jpg`
-  ffmpeg(['-y', '-i', `out/${slug}-poster.png`, '-vf', 'scale=1280:720', '-q:v', '3', thumbnail])
+  // The long side becomes 1280, the other follows: wide 1280×720, square 1280×1280, tall 720×1280.
+  ffmpeg(['-y', '-i', `out/${slug}-poster.png`, '-vf', "scale='if(gte(iw,ih),1280,-2)':'if(gte(iw,ih),-2,1280)'", '-q:v', '3', thumbnail])
   for (const video of [`out/${slug}-4k.mp4`, `out/${slug}-1080p.mp4`]) {
     const temp = video.replace(/\.mp4$/, '.cover.mp4')
     ffmpeg(['-y', '-i', video, '-i', thumbnail, '-map', '0', '-map', '1', '-c', 'copy', '-disposition:v:1', 'attached_pic', '-movflags', '+faststart', temp])

@@ -33,7 +33,8 @@ season the video; if everything makes a sound, nothing does. Kit scenes already 
 ## Adding a sound
 
 Only CC0 or similar (redistribution allowed): Kenney's other packs (kenney.nl) are CC0. Put the
-file in `public/audio/sfx/`, list it in `public/audio/LICENSES.md`, decode it to WAV in the render
-image (`ffmpeg -i x.ogg -ac 1 -ar 22050 x.wav`), run `python3 scripts/sfx-peaks.py x.wav` and add
+file in `public/audio/sfx/`, list it in `public/audio/LICENSES.md`, decode it to WAV on your computer
+(`ffmpeg -i x.ogg -ac 1 -ar 22050 x.wav`), run `python3 scripts/sfx-peaks.py x.wav` there (the render
+image has no Python) and add
 it to `CUES` in `src/kit/audio/cues.ts` with that peak. Mixkit, Pixabay and similar are free to use
 in a video but forbid redistributing the files, so they can't live in the repo.

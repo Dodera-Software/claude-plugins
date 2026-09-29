@@ -55,8 +55,9 @@ you when one arrives. Without it, the plugin mentions a newer version when you u
 update from `/plugin` → Installed → video-kit → Update now. What's new in each version:
 [releases](https://github.com/Dodera-Software/claude-plugins/releases).
 
-**You'll need** [Node.js](https://nodejs.org) (the LTS version) and
-[Docker Desktop](https://www.docker.com/products/docker-desktop) installed on your computer. Claude
+**You'll need** a Mac (or Linux with Docker running; Windows isn't supported yet), with
+[Node.js](https://nodejs.org) (the LTS version) and
+[Docker Desktop](https://www.docker.com/products/docker-desktop) installed. Claude
 checks for both before starting and tells you if one is missing. Docker doesn't need to be open;
 Claude opens it while making the video and closes it afterwards.
 

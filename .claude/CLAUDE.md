@@ -51,8 +51,8 @@ skills/make/template/             the studio copied into a product repo as video
 cd plugins/video-kit/skills/make/template && npm install
 npx tsc --noEmit                         # must pass
 npm run timeline                         # scene start frames
-./render.sh AcmeTeaser still 170 380     # single frames, Docker
-./render.sh AcmeTeaser                   # full render + glitch scan
+./render.sh AcmeTeaser-en still 170 380  # single frames, Docker
+./render.sh AcmeTeaser-en                # full render + glitch scan
 npm run studio                           # live preview
 ```
 
@@ -72,7 +72,7 @@ npm run studio                           # live preview
 In any other repo, load this working copy for one session, without installing it:
 
 ```bash
-claude --plugin-dir ~/Work/dev/dodera/claude-plugins/plugins/video-kit
+claude --plugin-dir /path/to/claude-plugins/plugins/video-kit
 ```
 
 Then `/video-kit:make …`. Check that the questions come first, that setup copies the template,

@@ -56,12 +56,12 @@ questions in one short message.
 **When the request describes the video** (`$ARGUMENTS` or the message says what it's for): use it,
 and ask only what it leaves open, in a single round. Always ask about sound if it wasn't said.
 
-**When it's just the command:** one round of four questions:
+**When it's just the command:** one round of four questions (Format allows more than one answer):
 
 | Header | Question | Options (label: description) |
 | --- | --- | --- |
 | Video | What kind of video? | Launch film: 45–75 s, the whole product · Feature teaser: 15–30 s, one feature · Social clip: 10–20 s, one moment, loops |
-| Format | Where will it be shown? | Website or YouTube: wide (16:9) · Reels, Shorts or TikTok: tall (9:16) · LinkedIn or X: square |
+| Format | Where will it be shown? (pick all that apply) | Website or YouTube: wide (16:9) · Reels, Shorts or TikTok: tall (9:16) · LinkedIn or X: square |
 | Tone | How should it feel? | Playful: a light joke here and there · Confident and calm · Straight to the point |
 | Sound | Sound effects or silent? | Sound effects: soft clicks and pops on what happens · Silent: no sound at all (never music) |
 
@@ -72,7 +72,7 @@ minutes, not the full investigation) and one more round, with real options:
 | --- | --- | --- |
 | Feature / Story | Which feature? (teaser, clip) or Which story? (launch film) | 3–4 of the product's actual features with a one-line description each, newest or most distinctive first; or 2–3 story angles from the product's own copy |
 | Language | In which language? (multiple choice allowed) | English (default) · the other languages the product itself ships in (from its translation files) |
-| Screens | How should the product appear? | Recreated from the code (recommended): nothing needs to run · Real screenshots of the running app: needs the app running on this computer with demo data and a demo login (see references/capture.md) |
+| Screens | How should the product appear? | Recreated from the code (recommended): nothing needs to run · Real screenshots of the running app: I start the product on this computer with example data; needs a demo login |
 
 If they pick real screenshots, give them the notice in references/capture.md before going on.
 
@@ -85,6 +85,9 @@ look like, see "A reference" in references/recipes.md.
 
 Check what's needed before doing any work, so nobody finds out after 20 minutes:
 
+- **A Mac, or Linux with Docker already running.** Making the video relies on macOS tools to open
+  and close Docker Desktop and show the result. On Windows, say plainly that video-kit works on a
+  Mac (or Linux) for now, and stop there.
 - **Node.js 20 or newer** (`node --version`) and **Docker Desktop** (`docker --version`, or
   `/Applications/Docker.app` on a Mac; it doesn't need to be running). If one is missing, stop
   and say so in plain words with the download link (nodejs.org, the LTS version;
@@ -133,9 +136,15 @@ references/style.md and references/pacing.md. Wait for a yes or changes.
 - `video/src/videos/<slug>/`: `content.ts` holds every word; `index.tsx` calls
   `defineVideo({ id, brand, format, cover: { title }, sound, scenes })`; the product's own scenes
   go in `scenes/` and `components/`. Register it in `video/src/videos/index.ts`.
+- **Several shapes:** `inFormats(['landscape', 'square'], format => defineVideo({ …, format }))`
+  makes one video per shape (`<Id>-landscape`, `<Id>-square`) from the same storyboard. Kit scenes
+  lay themselves out for each shape (stacked in square and tall frames); your own scenes must too
+  (references/product-scenes.md). Check stills of every shape.
 - **Several languages:** `content.ts` exports the words per language, and `index.tsx` wraps the
   definition in `inLanguages(words, words => defineVideo(…))`, which makes one video per language
-  (`<Id>-en`, `<Id>-ro`). Kit scenes time themselves from each language's text. Write each
+  (`<Id>-en`, `<Id>-ro`). Both together: `inLanguages(words, w => inFormats(formats, f => …))`
+  makes every shape in every language (`<Id>-square-ro`). Kit scenes time themselves from each
+  language's text. Write each
   language as a native speaker would, not word for word; the font needs `latin-ext` for accented
   letters (references/brand.md). One language: plain `defineVideo`, no suffix.
 - Kit scenes and components first (references/scenes.md). Scenes that show the product: rebuilt from
@@ -166,13 +175,16 @@ video, minutes.
 
 ## 7. Make the video and hand it over
 
-`./render.sh <VideoId>` (once per language) makes the 4K and 1080p videos, a poster and a YouTube
-thumbnail, and checks every frame for glitches; fix any it reports. Then:
+`./render.sh <VideoId>` (once per video id: each language and shape) makes the full-resolution and
+1080p videos, a poster and a thumbnail in the video's own shape, and checks every frame for
+glitches; fix any it reports. Then:
 
-- Open the video for them (`open out/<slug>-4k.mp4`) and reveal the folder (`open -R …`).
-- Tell them in plain words: how long it is, which file is for what ("the 4K one for the website and
-  YouTube, the 1080p one for LinkedIn, Slack and email; the thumbnail is the picture YouTube asks
-  for"), and anything you assumed.
+- Open the video for them (`open out/<slug>-4k.mp4`; `xdg-open` on Linux) and reveal the folder
+  (`open -R …`).
+- Tell them in plain words: how long it is, which file is for what (wide: "the 4K one for the
+  website and YouTube, the 1080p one for LinkedIn, Slack and email; the thumbnail is the picture
+  YouTube asks for"; square and tall: "the 1080p one is what you upload"), and anything you
+  assumed.
 - Invite notes like a director gives them: "this part is too fast", "make the ending punchier".
 - For someone who renders often, `./render.sh clean` frees space from old video app images.
 

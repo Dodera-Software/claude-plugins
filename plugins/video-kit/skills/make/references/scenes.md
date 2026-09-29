@@ -5,6 +5,8 @@ Everything below is exported from `src/kit` (`import { … } from '../../kit'`).
 ## Kit scenes
 
 Each takes props and has a matching `…Frames(props)` that computes its length from its words.
+Every one lays itself out for the frame: side by side in a wide video, stacked with type sized to
+fit in a square or tall one.
 
 ```tsx
 const hook: ChatPileUpProps = { messages, punchline: ['Sound', 'familiar?'] }
@@ -21,7 +23,7 @@ lists it as `cover`.
 | `ChatPileUp` | The hook: a team chat piling up with the problem, then a big line naming it | `messages: { person, text }[]` (4–5, last one is the joke), `punchline: string[]` |
 | `ScatterToLogo` | Scattered knowledge folding into the logo, name and tagline | `snippets: Snippet[]` (≤ 6), `line`, `aside`, `tagline`, `taglineAccent?` |
 | `TitleCard` | A chapter on its own, or the opening of a feature teaser | `eyebrow`, `title`, `aside?`, `sub?`, `accent?` |
-| `PromiseList` | Closing claims building one under another | `items: { icon: LucideIcon, text }[]` (3–5, first is the headline) |
+| `PromiseList` | Closing claims building one under another | `items: { icon: LucideIcon, text }[]` (3–5, first is the headline). `promiseListLeadIcon(props, format)` gives the headline icon's box, for `grow` into the next scene |
 | `EndCard` | Logo, name, tagline, "Works with" icons, the address | `tagline`, `taglineAccent?`, `worksWith?: ToolKind[]`, `cta?` |
 
 ## Kit components
@@ -42,8 +44,14 @@ lists it as `cover`.
 | `ToolIcon` | Google Meet, Slack, GitHub, Jira, file, Claude |
 | `Sfx` | A sound cue at a frame (see audio.md) |
 
-Videos: `defineVideo({ id, brand, format, cover: { title }, sound, scenes })`, and
-`inLanguages(wordsByLanguage, words => defineVideo(…))` for one video per language (`<Id>-<lang>`).
+Videos: `defineVideo({ id, brand, format, cover: { title }, sound, scenes })`, where `format` is
+`'landscape'` (16:9, the default), `'square'` or `'portrait'` (9:16, tall);
+`inLanguages(wordsByLanguage, words => defineVideo(…))` for one video per language (`<Id>-<lang>`),
+`inFormats(formats, format => defineVideo(…))` for one per shape (`<Id>-<format>`); nest them for
+every shape in every language (`<Id>-square-es`).
+
+Layout: `useShape()` gives `{ shape: 'wide' | 'square' | 'tall', wide, width, height, pad }` for
+your own scenes; `fitText(text, width, max)` is the largest size at which a line fits.
 
 Helpers: `progress(frame, start, duration, easing?)`, `mix(a, b, t)`, `seconds(n)`,
 `readingFrames(text)`, `easeOut`, `easeInOut`, `useBrand()`.
@@ -68,8 +76,9 @@ Take the box from a rendered still of the outgoing scene's last frames (after an
 then check the middle of the transition as a still. The growing shape keeps the element's colour
 and the next scene appears inside it only as it opens, so the handoff reads as one object.
 
-## Portrait and square
+## Square and tall
 
-Kit scenes are laid out for 1920×1080. For `portrait` (1080×1920), stack instead of placing side by
-side: title on top, one card or window below at full width, type about 15% smaller. For `square`,
-drop side-by-side layouts to one column. Read `useVideoConfig()` for the frame size in new scenes.
+Kit scenes adapt on their own. Your own scenes must too: read `useShape()` and stack what sits side
+by side in a wide frame (title above the product instead of beside it, one window instead of two),
+keep the side margin `pad`, size headlines with `fitText` or smaller fixed sizes (about 72 px square,
+84 px tall), and look at a still of every shape before rendering.

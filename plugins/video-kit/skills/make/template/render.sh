@@ -3,8 +3,8 @@
 # it has to and stops it again afterwards, so nothing is left running.
 #
 #   ./render.sh                          list the videos
-#   ./render.sh AcmeTeaser               → out/acme-teaser-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg
-#   ./render.sh AcmeTeaser still 120 900 single frames, to check a layout
+#   ./render.sh AcmeTeaser-en            → out/acme-teaser-en-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg
+#   ./render.sh AcmeTeaser-en still 120 900  single frames, to check a layout
 #   ./render.sh sheet ~/Downloads/reference.mp4  2 frames a second on contact sheets, to study a video
 #   ./render.sh clean                    remove render images other than this one (others rebuild once)
 #   ./render.sh capture <folder>         screenshots of the running app from src/videos/<folder>/capture.json

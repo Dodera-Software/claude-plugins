@@ -2,7 +2,8 @@
 
 The strongest scenes show the product working, rebuilt in React from its real screens and tokens.
 They are specific to one product, so they live in the video's folder (`scenes/`, `components/`).
-These patterns are proven; adapt them.
+These patterns are proven; adapt them. Each is described for a wide frame; for square and tall
+videos, stack them with `useShape()` (scenes.md, "Square and tall").
 
 ## The whole app, full frame
 
@@ -37,7 +38,7 @@ page components. Show a realistic state from the demo data, never lorem ipsum.
 Sources or inputs on one side, a panel on the other, filling row by row as items arrive: each new
 row lands on top and pushes the others down (`top = sum of later rows' progress × row height`),
 flashes a tint that fades, and gets a `tick`. A status pill says what's happening ("Reading 5 new
-items…") and settles into a result ("Added 2 decisions and a to-do"). Dots travelling along curves
+items…") and settles into a result ("Added 3 tasks and a reminder"). Dots travelling along curves
 from the sources show where it comes from; keep them small and few.
 
 ## A page with a claim beside it

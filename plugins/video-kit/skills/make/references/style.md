@@ -9,7 +9,7 @@ The reference is an Apple keynote film: content first, restraint, one idea at a 
 - Make clear within 10 s what the product is: the name plus a one-line tagline that says what it
   does, not what it "empowers".
 - Show, don't claim: a real flow in a rebuilt UI beats a bullet point. Claims go at the end, short.
-- One idea per scene. Each scene opens with `ChapterTitle`: an accent label (ONE MEMORY, IN REAL
+- One idea per scene. Each scene opens with `ChapterTitle`: an accent label (NEW, IN REAL
   TIME), the claim, and an optional muted second line that lands the joke or the detail.
 - Humour is dry and specific: "Skip the status meeting.", "Receipts included.", "Even the boring
   ones." One per scene at most, never at the expense of clarity.

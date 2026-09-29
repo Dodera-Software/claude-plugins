@@ -72,11 +72,13 @@ the make skill.
 
 When the arguments include `--ci` (the GitHub Action does), no one is there to answer:
 
-- Don't ask anything. Range: from the previous release tag to the one named in the arguments (or
-  to HEAD). Wide format, sound effects, English, screens recreated from the code.
+- Don't ask anything. Range from the arguments: "up to <tag>" is from the release tag before it to
+  that tag; "since <tag or time>" is from there to HEAD; otherwise from the latest release tag to
+  HEAD. Wide format, sound effects, English, screens recreated from the code.
 - Pick the headliners and "also new" items yourself by the rules above; skip the stills approval.
 - Set up `video/` if needed, build, check your own stills as usual, and make the video.
-- Finish by writing `video/out/whats-new-<id>.md`: the changes shown, one line each, with the
+- Finish by writing `video/out/whats-new-<version>.md` (the same name the video files start with,
+  e.g. `whats-new-v1-4-0.md`): the changes shown, one line each, with the
   file behind each claim, so a person can review it next to the video.
 - Don't commit or push anything.
 
@@ -86,5 +88,5 @@ When the arguments include `--ci` (the GitHub Action does), no one is there to a
 release and attaches it to the release. To set it up for someone: copy it to
 `.github/workflows/release-video.yml` in their project, and tell them in plain words that the
 project needs an `ANTHROPIC_API_KEY` secret (GitHub → the project → Settings → Secrets and variables
-→ Actions), which a developer or admin can add. Each run uses that key's credits. It stays inert
-until the secret exists.
+→ Actions), which a developer or admin can add. Each run uses that key's credits. Until the secret
+exists it skips quietly.

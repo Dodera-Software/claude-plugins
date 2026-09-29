@@ -3,15 +3,12 @@ import type { ComponentType } from 'react'
 import { AbsoluteFill } from 'remotion'
 import { SoundContext } from './audio/Sfx'
 import { BrandProvider, type Brand } from './brand'
+import { FORMATS } from './layout'
 import { FPS } from './motion'
 import { Cover, type CoverProps } from './scenes/Cover'
 import { crossfade, flood, type SceneTransition } from './transitions'
 
-export const FORMATS = {
-  landscape: { width: 1920, height: 1080 },
-  portrait: { width: 1080, height: 1920 },
-  square: { width: 1080, height: 1080 }
-} as const
+export { FORMATS }
 
 export interface Scene {
   component: ComponentType
@@ -101,11 +98,19 @@ export function defineVideo({ id, brand, format = 'landscape', scenes: ownScenes
 /**
  * The same video in several languages. `make` builds the video from one language's words; each
  * one gets the id `<id>-<language>` (AcmeTeaser-es), and every scene's length follows that
- * language's own text, since kit scenes time themselves from their words.
+ * language's own text, since kit scenes time themselves from their words. `make` may return
+ * `inFormats(…)` for every shape in every language (AcmeTeaser-square-es).
  */
-export function inLanguages<Words>(words: Record<string, Words>, make: (words: Words, language: string) => VideoDefinition): VideoDefinition[] {
-  return Object.entries(words).map(([language, own]) => {
-    const video = make(own, language)
-    return { ...video, id: `${video.id}-${language}` }
-  })
+export function inLanguages<Words>(words: Record<string, Words>, make: (words: Words, language: string) => VideoDefinition | VideoDefinition[]): VideoDefinition[] {
+  return Object.entries(words).flatMap(([language, own]) =>
+    [make(own, language)].flat().map(video => ({ ...video, id: `${video.id}-${language}` })))
+}
+
+/**
+ * The same video in several shapes, from one storyboard: `make` builds the video for one format;
+ * each gets the id `<id>-<format>` (AcmeTeaser-square). Kit scenes lay themselves out for each shape.
+ */
+export function inFormats(formats: (keyof typeof FORMATS)[], make: (format: keyof typeof FORMATS) => VideoDefinition | VideoDefinition[]): VideoDefinition[] {
+  return formats.flatMap(format =>
+    [make(format)].flat().map(video => (formats.length === 1 ? video : { ...video, id: `${video.id}-${format}` })))
 }

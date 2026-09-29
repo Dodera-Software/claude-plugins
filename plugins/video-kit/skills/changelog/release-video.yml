@@ -2,7 +2,8 @@
 # (github.com/Dodera-Software/claude-plugins), and attaches it to the release.
 #
 # Needs one repository secret: ANTHROPIC_API_KEY (Settings → Secrets and variables → Actions).
-# Each run spends that key's credits. Run it by hand from the Actions tab to try it first.
+# Each run spends that key's credits; without the secret it skips quietly. Run it by hand from the
+# Actions tab to try it first.
 name: What's new video
 
 on:
@@ -16,31 +17,41 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   video:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
     steps:
+      - name: No ANTHROPIC_API_KEY secret, nothing to do
+        if: env.HAS_KEY != 'true'
+        run: echo "::notice::Add an ANTHROPIC_API_KEY repository secret to make a video for each release."
+
       - uses: actions/checkout@v4
+        if: env.HAS_KEY == 'true'
         with:
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
+        if: env.HAS_KEY == 'true'
         with:
           node-version: 22
 
       - name: Make the video
+        if: env.HAS_KEY == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           plugin_marketplaces: https://github.com/Dodera-Software/claude-plugins.git
           plugins: video-kit@dodera
-          prompt: /video-kit:changelog ${{ github.event.release.tag_name || inputs.since || 'since the last release' }} --ci
+          prompt: /video-kit:changelog ${{ github.event.release.tag_name && format('up to {0}', github.event.release.tag_name) || inputs.since && format('since {0}', inputs.since) || 'since the last release' }} --ci
           claude_args: --allowedTools "Bash,Read,Write,Edit,Glob,Grep"
 
       - name: Attach it to the release
-        if: github.event_name == 'release'
+        if: env.HAS_KEY == 'true' && github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -49,6 +60,7 @@ jobs:
             --clobber
 
       - name: Keep the video as a workflow artifact
+        if: env.HAS_KEY == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: whats-new-video
