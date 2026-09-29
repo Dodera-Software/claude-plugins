@@ -97,3 +97,15 @@ export function defineVideo({ id, brand, format = 'landscape', scenes: ownScenes
     timeline: { starts, frames: scenes.map(scene => scene.frames), enters, cover: cover !== false }
   }
 }
+
+/**
+ * The same video in several languages. `make` builds the video from one language's words; each
+ * one gets the id `<id>-<language>` (AcmeTeaser-es), and every scene's length follows that
+ * language's own text, since kit scenes time themselves from their words.
+ */
+export function inLanguages<Words>(words: Record<string, Words>, make: (words: Words, language: string) => VideoDefinition): VideoDefinition[] {
+  return Object.entries(words).map(([language, own]) => {
+    const video = make(own, language)
+    return { ...video, id: `${video.id}-${language}` }
+  })
+}

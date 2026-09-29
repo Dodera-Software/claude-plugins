@@ -13,6 +13,7 @@ npm install
 npm run timeline                     # where each scene starts
 npm run studio                       # live preview with a timeline
 ./render.sh clean                    # remove old render images (about 1.9 GB each)
+./render.sh capture <folder>         # real screenshots of the running app, from src/videos/<folder>/capture.json
 ```
 
 Rendering runs in Docker (no browser on your machine); the script starts Docker if needed and

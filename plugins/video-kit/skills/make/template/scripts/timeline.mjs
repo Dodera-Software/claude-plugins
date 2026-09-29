@@ -1,5 +1,5 @@
 // Prints each video's timeline (where each scene starts and how long its entrance overlaps the
-// previous one), so frames can be checked by number: `npm run timeline`.
+// previous one), so frames can be checked by number: `npm run timeline`. With --ids, just the ids.
 import { build } from 'esbuild'
 import { pathToFileURL } from 'node:url'
 
@@ -15,6 +15,10 @@ await build({
   logLevel: 'error'
 })
 const { VIDEOS } = await import(pathToFileURL(outfile).href)
+if (process.argv.includes('--ids')) {
+  console.log(VIDEOS.map(video => video.id).join('\n'))
+  process.exit(0)
+}
 for (const video of VIDEOS) {
   const { starts, frames, enters, cover } = video.timeline
   console.log(`${video.id}: ${video.durationInFrames} frames (${(video.durationInFrames / video.fps).toFixed(1)} s)`)

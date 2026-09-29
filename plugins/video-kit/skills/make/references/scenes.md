@@ -37,8 +37,13 @@ lists it as `cover`.
 | `PersonAvatar` | Initials in a tinted circle (`Person`: initials, name, tint, ink) |
 | `SnippetCard` | A message, ticket or PR as it looks in its own tool |
 | `SlackThread` | A Slack thread where someone @mentions the product and it answers in place |
+| `CapturedScreen` | Real screenshots (`render.sh capture`) in a browser window: `shots` that switch at frames, `camera` keyframes (zoom toward a point, one move at a time, view kept inside the screenshot), a `cursor` that clicks; see capture.md |
+| `BrowserFrame` | A quiet browser window (dots and address) around anything |
 | `ToolIcon` | Google Meet, Slack, GitHub, Jira, file, Claude |
 | `Sfx` | A sound cue at a frame (see audio.md) |
+
+Videos: `defineVideo({ id, brand, format, cover: { title }, sound, scenes })`, and
+`inLanguages(wordsByLanguage, words => defineVideo(…))` for one video per language (`<Id>-<lang>`).
 
 Helpers: `progress(frame, start, duration, easing?)`, `mix(a, b, t)`, `seconds(n)`,
 `readingFrames(text)`, `easeOut`, `easeInOut`, `useBrand()`.

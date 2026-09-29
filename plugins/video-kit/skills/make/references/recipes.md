@@ -1,5 +1,12 @@
 # Recipes
 
+## A reference
+
+If they mention a video they'd like theirs to feel like, ask them to put the file in the project
+(or give its path). `./render.sh sheet <file>` puts 2 frames a second on contact sheets in `out/`.
+Read them and note its beats, how each scene becomes the next, camera moves, colours and type.
+Borrow structure and rhythm, never another company's brand or content.
+
 Starting structures for the usual requests. Each says what to find out, how it should look, what
 happens when, and what goes wrong. Adapt one in the storyboard; don't follow it blindly.
 

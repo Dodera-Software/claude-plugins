@@ -12,7 +12,9 @@ A brand is a folder `src/brands/<slug>/`, copied from the example `src/brands/ac
 
 ## Fonts
 
-Load with `@remotion/google-fonts/<Family>` (`loadFont('normal', { weights, subsets: ['latin'] })`).
+Load with `@remotion/google-fonts/<Family>` (`loadFont('normal', { weights, subsets: ['latin', 'latin-ext'] })`);
+`latin-ext` carries the accented letters of Romanian, Polish, Czech, Turkish and others, and costs
+nothing when unused. Other scripts need their subset (`cyrillic`, `greek`, `vietnamese`).
 Rendering runs in a Linux container, so system fonts (SF Pro, Segoe) aren't there: pick the
 closest Google font (SF Pro → Inter, Segoe → Open Sans, Helvetica → Inter or Arimo) and say so in a
 comment. Only load the weights you use.

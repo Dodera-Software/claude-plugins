@@ -17,23 +17,31 @@ This repo is a Claude Code plugin marketplace laid out like Anthropic's own
 
 ## video-kit
 
-Makes product videos from a product's own codebase. Users run `/video-kit:make` in their repo; the
-skill copies a Remotion studio into `video/` there, asks what the video is, studies the product,
-storyboards, builds and renders. Nothing in it is about any one product: the example brand and
+Makes product videos from a product's own codebase. Users run `/video-kit:make` (or
+`/video-kit:changelog` for a what's-new video) in their repo; the skill asks what the video is,
+copies a Remotion studio into `video/` there, studies the product, storyboards, shows stills,
+builds and renders.
+
+**Its users are often not technical** (sales, marketing). The skills do every technical step
+themselves, speak in plain words, check Node and Docker up front, and show stills before the full
+video. Keep that true in every change: nothing a user has to type into a terminal, no jargon in
+what Claude says to them. Nothing in it is about any one product: the example brand and
 video (`acme`) are made up, and real products' videos live in their own repos.
 
 ### Layout (inside `plugins/video-kit/`)
 
 ```
 .claude-plugin/plugin.json        the plugin: name video-kit, version (bump it, see Releasing)
-skills/make/SKILL.md              the workflow Claude follows: brief (questionnaire), setup, investigation, storyboard, build, check, render
+skills/make/SKILL.md              the workflow Claude follows: brief (questionnaire), readiness and setup, investigation, storyboard, build, stills, render
+skills/changelog/                 /video-kit:changelog (what's-new videos from recent changes) and release-video.yml, a GitHub Action template
 skills/make/references/*.md       details SKILL.md points to: scenes, product-scenes, style, pacing, audio, brand, recipes
 skills/make/template/             the studio copied into a product repo as video/
   src/kit/                        shared: motion helpers, brand context, components, scenes, transitions, sound cues, defineVideo
   src/brands/acme/                example brand (tokens, logo, Brand object)
   src/videos/acme-teaser/         example video built only from kit scenes
   render.sh                       every render goes through this (Docker)
-  scripts/                        finish.mjs (glitch scan), timeline.mjs, sfx-peaks.py
+  scripts/                        finish.mjs (previews, glitch scan), timeline.mjs, capture.mjs (real screenshots), sfx-peaks.py
+  fonts.conf                      makes Inter answer for system fonts in captures
   public/audio/sfx/               CC0 sounds (Kenney) + LICENSES.md
 ```
 
@@ -84,6 +92,11 @@ that the storyboard comes before any code, and that the render finishes.
 
 ### Hard-won rules
 
+- **Captures reach the host at `host.docker.internal`** (with `--add-host … host-gateway` for Linux);
+  that reaches servers bound to 127.0.0.1 too. Only `VIDEO_*` environment variables pass into the
+  container, for demo logins. The render image carries Inter as the answer for system fonts
+  (`fonts.conf`), or apps using the system stack would capture in a fallback font. Keep camera views
+  inside the screenshot; past its edge there's nothing to show.
 - **Frame 0 is the preview.** Slack, LinkedIn, X, WhatsApp and Finder show a video's first frame;
   a video that fades in from an empty canvas looks like a blank upload. `defineVideo` prepends the
   `Cover` scene (logo, name, title), and the poster and thumbnail are taken from frame 0.
@@ -103,7 +116,8 @@ that the storyboard comes before any code, and that the render finishes.
   is empty). Keep those guards. Anything in the exit trap must not fail (`pkill … || true`): under
   `set -e` a `pkill` that finds nothing ends a successful render with exit code 1.
 - **One render image per kit version.** Its tag hashes `package.json` and the `Dockerfile`, not the
-  lockfile, which `npm install` rewrites; `./render.sh clean` removes the rest.
+  lockfile, which `npm install` rewrites (plus `fonts.conf`, which goes into it); `./render.sh clean`
+  removes the rest.
 - **Audio** must be redistributable (CC0) and listed in `public/audio/LICENSES.md`. No music: the
   skill asks "sound effects or silent?" and `defineVideo({ sound: false })` mutes every cue.
 - **Remotion** needs a company licence for companies over three people; the READMEs say so.

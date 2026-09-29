@@ -7,6 +7,8 @@
 #   ./render.sh AcmeTeaser still 120 900 single frames, to check a layout
 #   ./render.sh sheet ~/Downloads/reference.mp4  2 frames a second on contact sheets, to study a video
 #   ./render.sh clean                    remove render images other than this one (others rebuild once)
+#   ./render.sh capture <folder>         screenshots of the running app from src/videos/<folder>/capture.json
+#                                        (login details as VIDEO_* environment variables)
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -15,14 +17,14 @@ if [ "$VIDEO" = "sheet" ]; then
   REFERENCE="$(cd "$(dirname "${2:?give the video to study}")" && pwd)/$(basename "$2")"
 fi
 if [ -z "$VIDEO" ]; then
-  grep -ho "id: '[A-Za-z0-9]*'" src/videos/*/index.tsx | sed "s/id: '\(.*\)'/\1/"
+  node scripts/timeline.mjs --ids
   exit 0
 fi
 SLUG="$(echo "$VIDEO" | sed -E 's/([a-z0-9])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')"
 
 # Named after what goes into it, so projects on the same kit share one image. The lockfile is left
 # out on purpose: `npm install` rewrites it without changing anything the image needs.
-IMAGE="video-kit:$(shasum package.json Dockerfile | shasum | cut -c1-12)"
+IMAGE="video-kit:$(shasum package.json Dockerfile fonts.conf | shasum | cut -c1-12)"
 STARTED_DOCKER=0
 DOCKER_APP="/Applications/Docker.app/Contents/MacOS/Docker"
 
@@ -88,10 +90,16 @@ if [ "$(docker run --rm --entrypoint sh "$IMAGE" -c 'wc -c < package.json')" -lt
 fi
 mkdir -p out
 
+# Only VIDEO_* variables reach the container (login details for capture); nothing else leaks in.
+ENV_ARGS=()
+for name in $(env | sed -n 's/^\(VIDEO_[A-Za-z0-9_]*\)=.*/\1/p'); do ENV_ARGS+=(-e "$name"); done
+
 remotion() {
   docker run --rm ${ENTRYPOINT:+--entrypoint "$ENTRYPOINT"} ${EXTRA_MOUNT:+-v "$EXTRA_MOUNT"} \
+    ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} \
+    --add-host=host.docker.internal:host-gateway \
     -v "$PWD/src:/video/src:ro" \
-    -v "$PWD/public:/video/public:ro" \
+    -v "$PWD/public:/video/public:${PUBLIC_MODE:-ro}" \
     -v "$PWD/remotion.config.ts:/video/remotion.config.ts:ro" \
     -v "$PWD/tsconfig.json:/video/tsconfig.json:ro" \
     -v "$PWD/scripts:/video/scripts:ro" \
@@ -105,6 +113,15 @@ if [ "$VIDEO" = "sheet" ]; then
     -i "/reference/$(basename "$REFERENCE")" -vf "fps=2,scale=480:-2,tile=5x4" \
     "out/$NAME-sheet-%02d.png"
   echo "Contact sheets: out/$NAME-sheet-*.png (20 frames each, 0.5 s apart)"
+  exit 0
+fi
+
+if [ "$VIDEO" = "capture" ]; then
+  FOLDER="${2:?give the video folder under src/videos, e.g. launch}"
+  [ -f "src/videos/$FOLDER/capture.json" ] || { echo "No src/videos/$FOLDER/capture.json"; exit 1; }
+  echo "Capturing from the running app (it must be up, with its database and demo data)..."
+  PUBLIC_MODE=rw ENTRYPOINT=node remotion scripts/capture.mjs "src/videos/$FOLDER/capture.json" "public/captures/$FOLDER"
+  echo "Done: public/captures/$FOLDER/"
   exit 0
 fi
 

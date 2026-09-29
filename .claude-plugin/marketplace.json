@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "video-kit",
-      "description": "Make launch videos, feature teasers and social clips for your product, from your codebase: /video-kit:make. Rendered from code with Remotion.",
+      "description": "Make launch videos, feature teasers, social clips and what's-new videos for your product, from its code: /video-kit:make and /video-kit:changelog. Built for anyone, no video skills needed.",
       "author": {
         "name": "Dodera Software"
       },

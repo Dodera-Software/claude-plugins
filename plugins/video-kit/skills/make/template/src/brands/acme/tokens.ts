@@ -1,7 +1,7 @@
 import { loadFont } from '@remotion/google-fonts/Inter'
 
 /** A made-up product for the example video. A real brand's tokens come from its own CSS or theme. */
-export const { fontFamily } = loadFont('normal', { weights: ['400', '500', '600', '700'], subsets: ['latin'] })
+export const { fontFamily } = loadFont('normal', { weights: ['400', '500', '600', '700'], subsets: ['latin', 'latin-ext'] })
 
 export const color = {
   canvas: '#F7F7F5',

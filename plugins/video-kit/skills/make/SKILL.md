@@ -1,6 +1,6 @@
 ---
 name: make
-description: Make a product video (launch film, feature teaser, social clip, changelog video) for the product in the current repo, rendered from code with Remotion. Use when someone asks for a launch video, promo, feature video, motion graphics, or a short clip about their product or a feature.
+description: Make a product video (launch film, feature teaser, social clip) for the product in the current repo, rendered from code with Remotion. Use when someone asks for a launch video, promo, feature video, motion graphics, or a short clip about their product or a feature.
 argument-hint: "[optional: what the video is for, length, format, tone]"
 ---
 
@@ -8,133 +8,158 @@ argument-hint: "[optional: what the video is for, length, format, tone]"
 
 The request: $ARGUMENTS
 
-The video is React components rendered frame by frame (Remotion), built from the kit in this skill's
-template: `${CLAUDE_PLUGIN_ROOT}/skills/make/template` (when working inside the
-claude-plugins repo itself, it's `plugins/video-kit/skills/make/template`). It should look like a careful motion designer made it for this product:
-restrained, readable, specific, with one small joke per scene at most. Everything in it must be
-true of the product as the code shows it today.
+The video is React components rendered frame by frame (Remotion), built from the kit in this
+skill's template: `${CLAUDE_PLUGIN_ROOT}/skills/make/template` (inside the claude-plugins repo
+itself, `plugins/video-kit/skills/make/template`). It should look like a careful motion designer made
+it for this product: restrained, readable, specific, with one small joke per scene at most.
+Everything in it must be true of the product as the code shows it today.
+
+## Who you're working with
+
+Assume the person is not technical: someone from sales, marketing or management who wants a video
+for their product. So:
+
+- **You do every technical step yourself.** Never ask them to run a command, open a terminal, edit a
+  file or install a package through the command line. If something needs their action (installing
+  an app, giving a demo login), ask for exactly that, in one plain sentence.
+- **Plain words.** No jargon in anything you say to them: not "Docker", "render", "frames",
+  "props", "repo" or "commit" unless they used it first. Say "the video app", "making the video",
+  "a moment in the video", "the project".
+- **Short progress notes** at each step ("Reading how the product works…", "Making the video,
+  about 3 minutes…"), and nothing else in between.
+- **Show, don't describe.** Before the full video, show still images of key moments to approve.
+- **Errors in plain words**: what happened, what you're doing about it, and what (if anything)
+  they need to do.
+- A developer may use it too; if they talk technically, match them.
 
 ## 1. The brief
 
-Settle what the video is before anything else. Ask with the multiple-choice question tool
-(AskUserQuestion) so the person clicks instead of types; every question gets an "Other" for their
-own answer. If that tool isn't available, ask the same questions in one short message.
+Ask with the multiple-choice question tool (AskUserQuestion) so the person clicks instead of types;
+every question gets an "Other" for their own answer. If that tool isn't available, ask the same
+questions in one short message.
 
 **When the request describes the video** (`$ARGUMENTS` or the message says what it's for): use it,
 and ask only what it leaves open, in a single round. Always ask about sound if it wasn't said.
 
-**When it's just the command, with nothing else:** one round of four questions:
+**When it's just the command:** one round of four questions:
 
 | Header | Question | Options (label: description) |
 | --- | --- | --- |
 | Video | What kind of video? | Launch film: 45–75 s, the whole product · Feature teaser: 15–30 s, one feature · Social clip: 10–20 s, one moment, loops |
-| Format | Where will it play? | Landscape: 1920×1080, site and YouTube · Portrait: 1080×1920, Reels, Shorts, TikTok · Square: 1080×1080, LinkedIn and X |
-| Tone | How should it feel? | Playful: a joke per scene · Confident and calm · Straight to the point |
-| Sound | Sound effects or silent? | Sound effects: soft clicks, pops and whooshes on what happens · Silent: no audio (no music either way) |
+| Format | Where will it be shown? | Website or YouTube: wide (16:9) · Reels, Shorts or TikTok: tall (9:16) · LinkedIn or X: square |
+| Tone | How should it feel? | Playful: a light joke here and there · Confident and calm · Straight to the point |
+| Sound | Sound effects or silent? | Sound effects: soft clicks and pops on what happens · Silent: no sound at all (never music) |
 
-Then a quick skim of the product (navigation, routes, landing copy, README, recent commits: minutes,
-not the full investigation) and one follow-up question with real answers as options:
+Then a quick look at the product (navigation, pages, landing copy, README, recent changes:
+minutes, not the full investigation) and one more round, with real options:
 
-- **Feature teaser or social clip:** "Which feature?", offering 3–4 of the product's actual
-  features, each with a one-line description of what it does, newest or most distinctive first.
-- **Launch film:** "Which story?", offering 2–3 angles drawn from the product's own copy (the
-  problem it removes, the moment it saves time, what makes it different), one line each.
+| Header | Question | Options |
+| --- | --- | --- |
+| Feature / Story | Which feature? (teaser, clip) or Which story? (launch film) | 3–4 of the product's actual features with a one-line description each, newest or most distinctive first; or 2–3 story angles from the product's own copy |
+| Language | In which language? (multiple choice allowed) | English (default) · the other languages the product itself ships in (from its translation files) |
+| Screens | How should the product appear? | Recreated from the code (recommended): nothing needs to run · Real screenshots of the running app: needs the app running on this computer with demo data and a demo login (see references/capture.md) |
 
-Don't ask for the rest; decide it and show it in the storyboard, where it's easy to correct:
+If they pick real screenshots, give them the notice in references/capture.md before going on.
 
-- **Who watches it:** customers, unless the request says investors or the team.
-- **Call to action:** the product's domain.
-- **Tone details:** confident and warm, never salesy, no hype words.
-- **A reference**, if they mention one: once the studio is set up (step 2),
-  `./render.sh sheet <file>` puts 2 frames a second of a video on contact sheets. Read them and note its beats, how each scene becomes the next, camera
-  moves, colours and type. Borrow structure and rhythm, never another company's brand or content.
-  references/recipes.md has structures for each kind of video.
+Don't ask for the rest; decide it and show it in the storyboard, where it's easy to correct: who
+watches it (customers unless said otherwise), the call to action (the product's website), tone
+details (confident and warm, never salesy, no hype words). If they mention a video they'd like to
+look like, see "A reference" in references/recipes.md.
 
-## 2. Set up the studio in the product repo
+## 2. Get ready (quietly)
 
-Videos live with the product, in a `video/` folder at the repo root (use another name if `video/`
-is taken). If it doesn't exist:
+Check what's needed before doing any work, so nobody finds out after 20 minutes:
 
-1. Copy the template (above) to `video/`, without `node_modules` and `out`:
-   `rsync -a --exclude node_modules --exclude out "<template>/" video/`.
-2. `cd video && npm install`.
-3. Keep it out of the product's own tooling: add `video/node_modules` and `video/out` to
-   `.gitignore`, and exclude `video/` from the product's linter, type checker, test runner and
-   Docker build context if they would otherwise pick it up (check `eslint` config, root
-   `tsconfig` includes, `.dockerignore`). Say in one line what you changed.
+- **Node.js 20 or newer** (`node --version`) and **Docker Desktop** (`docker --version`, or
+  `/Applications/Docker.app` on a Mac; it doesn't need to be running). If one is missing, stop
+  and say so in plain words with the download link (nodejs.org, the LTS version;
+  docker.com/products/docker-desktop), that installing may need an administrator, and that you'll
+  carry on as soon as it's installed. Everything up to the storyboard can go ahead meanwhile.
+- **The studio:** videos live with the product, in a `video/` folder at the project root (another
+  name if that's taken). If it isn't there, copy the template to it without `node_modules` and
+  `out` (`rsync -a --exclude node_modules --exclude out "<template>/" video/`), run `npm install`
+  in it, and keep it out of the project's own tooling: add `video/node_modules` and `video/out` to
+  `.gitignore`, and exclude `video/` from the linter, type checker, tests and Docker build context
+  where they would pick it up. Tell the person in one line that you added a `video` folder to the
+  project, which a developer may want to glance at. Don't commit or push unless they ask.
+- `video/src/videos/acme-teaser` and `video/src/brands/acme` are a made-up example; delete them once
+  the product's own video exists. If `video/` exists already, add the new video next to the others.
 
-`video/src/videos/acme-teaser` and `video/src/brands/acme` are a made-up example: read them to see
-how a video is put together, and delete them once the product's own video exists.
+## 3. Understand the product (the most important step)
 
-If `video/` exists already, reuse it: add the new video next to the others.
+A video is only as good as what you know about the product. Read the code until you could explain
+it to a new hire. For a large project, send an Explore agent per area.
 
-## 3. Investigate the product (the most important step)
-
-A video is only as good as what you know about the product. Read the codebase until you could
-explain it to a new hire, then write it down. For a large repo, send an Explore agent per area.
-
-- **What it is and for whom:** README, docs, landing or marketing pages, i18n/copy files, app
-  store or package descriptions, the first screen a new user sees.
-- **What it does today:** routes and pages, navigation, API endpoints, background jobs,
-  integrations, feature flags, changelog and recent commits. For a feature video, read that
-  feature's code end to end: what the user does, what they see, its limits and edge cases.
+- **What it is and for whom:** README, docs, landing or marketing pages, translation files, store
+  descriptions, the first screen a new user sees.
+- **What it does today:** pages, navigation, API endpoints, integrations, feature flags, changelog
+  and recent commits. For a feature video, read that feature end to end: what the user does, what
+  they see, its limits.
 - **How it looks:** design tokens (CSS variables, Tailwind config, theme files), fonts, radii,
-  shadows, the logo and favicon SVGs, and the real screens (page components, screenshots,
-  Storybook). The video rebuilds these screens, so note layouts and exact labels.
-- **Its world:** demo or seed data, fixtures and test data give real-sounding names, projects and
-  numbers. Prefer them to inventing.
+  shadows, the logo and favicon SVGs, the real screens (page components, screenshots, Storybook).
+- **Its world:** demo or seed data and fixtures give real-sounding names, projects and numbers.
+- **For real screenshots:** how the project runs (references/capture.md, "Learn how this project
+  runs").
 
 Write `video/src/videos/<slug>/BRIEF.md`: the one-line promise, who it's for, the 3–5 things the
-video will show with the file each claim comes from, the tokens, fonts and logo you'll use, the
-demo names. If you can't point to code for a claim, it doesn't go in the video.
-
-Then create the brand if it doesn't exist: references/brand.md.
+video shows with the file each claim comes from, the tokens, fonts and logo, the demo names, and,
+for captures, how the app runs. A claim you can't point to in the code doesn't go in the video.
+Create the brand if it doesn't exist: references/brand.md.
 
 ## 4. Storyboard, then stop for approval
 
-A table before any code: `# | scene (kit template or new) | words on screen | seconds | how it
-becomes the next scene | sound`. Follow references/style.md and references/pacing.md. Show it with
-the brief's key claims and wait for a yes or changes. A table is far cheaper to change than a render.
+Show the plan the way a person reads it: one line per scene, in their words ("Opens on a team chat
+where nobody knows who's doing the invoice export; then…"), with its length in seconds and what it
+shows. Then the few decisions you made for them (audience, website, tone). Follow
+references/style.md and references/pacing.md. Wait for a yes or changes.
 
 ## 5. Build
 
 - `video/src/videos/<slug>/`: `content.ts` holds every word; `index.tsx` calls
-  `defineVideo({ id, brand, format, cover: { title }, scenes })`; the product's own scenes and UI mockups go in
-  `scenes/` and `components/`. Register it in `video/src/videos/index.ts`.
-- Kit scenes and components first (references/scenes.md). Scenes that show the product follow the
-  patterns in references/product-scenes.md: its real screens rebuilt in React from the brand's
-  tokens, never a screenshot, so they stay sharp at 4K and can move.
+  `defineVideo({ id, brand, format, cover: { title }, sound, scenes })`; the product's own scenes
+  go in `scenes/` and `components/`. Register it in `video/src/videos/index.ts`.
+- **Several languages:** `content.ts` exports the words per language, and `index.tsx` wraps the
+  definition in `inLanguages(words, words => defineVideo(…))`, which makes one video per language
+  (`<Id>-en`, `<Id>-ro`). Kit scenes time themselves from each language's text. Write each
+  language as a native speaker would, not word for word; the font needs `latin-ext` for accented
+  letters (references/brand.md). One language: plain `defineVideo`, no suffix.
+- Kit scenes and components first (references/scenes.md). Scenes that show the product: rebuilt from
+  the code (references/product-scenes.md) or real screenshots (`CapturedScreen`,
+  references/capture.md), as they chose.
 - The cover: every video opens on a composed frame (logo, name and `cover.title`, the video's
   promise in a few words), because Slack, LinkedIn, X, WhatsApp and Finder show a video's first
-  frame as its preview; a blank first frame looks like a broken upload. The first scene bursts out
-  of it. Turn it off only if the first scene is fully composed at its own frame 0.
+  frame as its preview.
 - Transitions: every scene after the first says how it arrives (`enter: grow(…)`, `flood(…)`,
   `push(…)`), growing out of something visible in the previous scene. Crossfade only when nothing
   can.
-- Sound: if they chose sound effects, quiet `<Sfx>` cues on things that happen (references/audio.md);
-  if they chose silent, `defineVideo({ sound: false })` and skip the cues in new scenes. No music:
-  if the person wants a track, they add one they have the rights to in their editor.
-- Kit scenes compute their own length from their words; in your own scenes every line stays up for
-  `readingFrames(text)` from its first word.
+- Sound: with sound effects, quiet `<Sfx>` cues on things that happen (references/audio.md); silent,
+  `sound: false`. Never music.
+- In your own scenes every line stays up for `readingFrames(text)` from its first word.
 - `npx tsc --noEmit` must pass.
 
-## 6. Check your own work
+## 6. Check it, then show it
 
 `npm run timeline` prints where each scene starts. `./render.sh <VideoId> still <frame> …` renders
-single frames (in Docker; the script starts and stops it). Render each scene at its fullest moment
-and the middle of every transition, and look at every image. Fix: text that overlaps or wraps with
-one word alone, a heading over three lines, empty areas inside cards, anything cut at the frame
-edge, anything off-brand, any claim not in the brief. Slow is fixable; "too fast to read" is the
-complaint viewers actually make.
+single images (the script starts the video app and closes it after). Look at each scene at its
+fullest moment and the middle of every transition. Fix text that overlaps or wraps with one word
+alone, headings over three lines, empty areas, anything cut at the edge, anything off-brand, any
+claim not in the brief. "Too fast to read" is what viewers complain about; slow is fixable.
 
-## 7. Render and hand over
+Then show the person 3–4 of those images (open them, or point to them), one line each on the moment
+they show, and ask "Shall I make the full video?" Their notes now cost seconds; after the full
+video, minutes.
 
-`./render.sh <VideoId>` writes `out/<slug>-4k.mp4`, `out/<slug>-1080p.mp4`, a 4K poster and a
-1280×720 `thumbnail.jpg` (both the cover), embeds the cover in the MP4s as cover art, then scans
-every frame for single-frame pops. Look at every pop it lists (a `still` of that frame and its
-neighbours) and fix the cause. Open the 4K file for the person, and tell them its length, where the
-files are, and anything you assumed. For YouTube, the thumbnail file is the one to upload as the
-custom thumbnail. If they render often, `./render.sh clean` removes old render images.
+## 7. Make the video and hand it over
+
+`./render.sh <VideoId>` (once per language) makes the 4K and 1080p videos, a poster and a YouTube
+thumbnail, and checks every frame for glitches; fix any it reports. Then:
+
+- Open the video for them (`open out/<slug>-4k.mp4`) and reveal the folder (`open -R …`).
+- Tell them in plain words: how long it is, which file is for what ("the 4K one for the website and
+  YouTube, the 1080p one for LinkedIn, Slack and email; the thumbnail is the picture YouTube asks
+  for"), and anything you assumed.
+- Invite notes like a director gives them: "this part is too fast", "make the ending punchier".
+- For someone who renders often, `./render.sh clean` frees space from old video app images.
 
 ## Never
 
@@ -142,5 +167,7 @@ custom thumbnail. If they render often, `./render.sh clean` removes old render i
   product doesn't integrate with.
 - Impersonate another product's UI beyond a simplified, recognisable mockup of an integration the
   product really has.
+- Put real customer data on screen. Demo data only.
 - Add audio the kit doesn't ship without a licence that allows it in the repo.
-- Leave Docker running: `render.sh` stops what it started; if you start it yourself, stop it.
+- Leave anything running: `render.sh` closes the video app if it opened it; stop anything else you
+  started (the product's dev server, its containers).

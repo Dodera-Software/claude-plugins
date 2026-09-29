@@ -1,16 +1,41 @@
 # video-kit
 
-A Claude Code plugin that makes launch videos, feature teasers and social clips for **your**
-product, from your codebase. Describe the video you want; Claude studies the repo (what the product
-does, its screens, colours, logo and demo data), proposes a storyboard, and renders a 4K video made
-entirely of code: your real UI rebuilt in React, animated with [Remotion](https://www.remotion.dev).
+Launch videos, feature teasers, social clips and "what's new" videos for **your** product, made
+by Claude from your product's own code. No video editor and no design skills needed: answer a few
+questions, approve a plan, and get a finished 4K video.
+
+## What you can ask for
+
+```
+/video-kit:make
+```
+
+Claude asks what kind of video (launch film, feature teaser, social clip), where it will be shown,
+the tone, sound effects or silent, which feature or story, which languages, and whether to show the
+product recreated from its code or as real screenshots. Then it reads how your product works,
+shows you the plan and a few still images to approve, and makes the video.
 
 ```
 /video-kit:make 20-second teaser for the new export feature, playful, for LinkedIn
 ```
 
-Or run `/video-kit:make` on its own: it asks four quick multiple-choice questions (kind of video,
-format, tone, sound), skims your product, and offers your real features to pick from.
+With a description, it only asks what's missing.
+
+```
+/video-kit:changelog
+```
+
+A 15–30 second "what's new" video from your recent changes: Claude finds what users will notice,
+checks each change in the code, and lets you pick which ones to show.
+
+You get:
+
+- the video in 4K (website, YouTube) and 1080p (LinkedIn, Slack, email),
+- a cover image and a YouTube thumbnail; every video opens on a cover, so Slack and LinkedIn show
+  a proper preview,
+- one video per language you asked for.
+
+Give notes like a director ("this part is too fast", "make the ending punchier") and it redoes them.
 
 ## Install
 
@@ -20,59 +45,48 @@ In Claude Code:
 /plugin install video-kit --marketplace Dodera-Software/claude-plugins
 ```
 
-Confirm adding the marketplace, then pick a scope: **Install for you** to use it in every repo.
-
-On Claude Code older than v2.1.275, add the marketplace first, then install:
-
-```
-/plugin marketplace add Dodera-Software/claude-plugins
-/plugin install video-kit@dodera
-```
-
-It comes from [Dodera-Software/claude-plugins](https://github.com/Dodera-Software/claude-plugins),
-Dodera's plugin catalog; adding it once also shows any future Dodera plugins in `/plugin` → Discover.
-Choose **Install for you** to have it in every project, in the terminal, VS Code and the desktop app.
-
-Then, in your product's repo, run `/video-kit:make` with what you want (or just ask Claude
-for a launch video; the skill loads on its own).
+Confirm adding the marketplace, then choose **Install for you** to have it in every project, in the
+terminal, VS Code and the desktop app. On Claude Code older than v2.1.275, run
+`/plugin marketplace add Dodera-Software/claude-plugins` first, then `/plugin install video-kit@dodera`.
 
 **Update:** `/plugin` → Installed → video-kit → Update now.
 
-**Try it without installing:** clone `Dodera-Software/claude-plugins` and start Claude Code in your
-product's repo with `claude --plugin-dir /path/to/claude-plugins/plugins/video-kit`; the plugin is
-loaded for that session only.
+**You'll need** [Node.js](https://nodejs.org) (the LTS version) and
+[Docker Desktop](https://www.docker.com/products/docker-desktop) installed on your computer. Claude
+checks for both before starting and tells you if one is missing. Docker doesn't need to be open;
+Claude opens it while making the video and closes it afterwards.
 
-## What happens
+## Real screenshots (optional)
 
-1. **Setup:** the studio (this plugin's `skills/make/template/`) is copied into a `video/`
-   folder in your repo and kept out of your own lint, build and Docker context.
-2. **Investigation:** Claude reads your product until it can explain it: pages, features, copy,
-   design tokens, logo, demo data. It writes a short brief where every claim points at a file.
-3. **Storyboard:** scenes, words, seconds, transitions and sounds as a table, for your OK.
-4. **Build:** reusable scenes from the kit plus your product's screens rebuilt in React. Scenes
-   grow out of each other instead of fading, every line stays up long enough to read, and clicks,
-   pops and whooshes land on the frame they belong to.
-5. **Check and render:** Claude looks at stills of every scene and transition, renders 4K and
-   1080p, and scans every frame for glitches before handing it over. Every video opens on a
-   cover (logo, name, promise), so Slack, LinkedIn and X show a real preview; you also get a poster
-   and a YouTube-ready 1280×720 thumbnail.
+By default the product is recreated from its code, so nothing needs to run. If you choose real
+screenshots instead:
 
-Give it notes like a director ("too fast here", "make the logo land harder") and it re-renders.
+- Claude starts your product on your computer the way developers run it (with its database and
+  example data), takes the screenshots, and closes it again. It reads your project to learn how.
+- If pages need a login, you give it a **demo account**, never a real one.
+- **Everything on screen ends up in the video**, so only example data should be visible.
 
-## Needs
+## For developers
 
-- Node 20+ and Docker Desktop. Rendering runs in a container, so no browser is installed on your
-  machine; the render script starts Docker when needed and stops it afterwards. The render image is
-  about 1.9 GB, shared by every project on the same kit version; `./render.sh clean` in a `video/`
-  folder removes older ones.
+- **Where things go:** a `video/` folder in your project (Remotion, its own `package.json`),
+  kept out of your linter, build and Docker context. `video/out/` and `video/node_modules/` are
+  git-ignored. See `video/README.md` for the commands.
+- **Rendering** runs in Docker, so no browser is installed on your machine. The render image is
+  about 1.9 GB, shared by every project on the same kit version; `./render.sh clean` removes old
+  ones.
+- **Release videos on every release:** copy `skills/changelog/release-video.yml` to
+  `.github/workflows/` and add an `ANTHROPIC_API_KEY` repository secret. Each run uses that key's
+  credits.
+- **Try it without installing:** clone `Dodera-Software/claude-plugins` and start Claude Code in your
+  project with `claude --plugin-dir /path/to/claude-plugins/plugins/video-kit`.
 
-## Try the example
+### Try the example
 
 From a clone of `Dodera-Software/claude-plugins`:
 
 ```bash
 cp -r plugins/video-kit/skills/make/template /tmp/video && cd /tmp/video && npm install
-./render.sh AcmeTeaser          # a 16-second teaser for a made-up product → out/
+./render.sh AcmeTeaser-en       # a 17-second teaser for a made-up product → out/ (also AcmeTeaser-es)
 npm run studio                  # or preview it live with a timeline
 ```
 
