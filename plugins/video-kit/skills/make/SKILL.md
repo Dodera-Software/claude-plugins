@@ -134,7 +134,7 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
   like `src/kit/layout.ts` or `scripts/site.mjs`), bring it up to date first: copy from the template
   `src/kit/`, `scripts/`, `render.sh`, `Dockerfile`, `fonts.conf`, `package.json`,
   `package-lock.json`, `README.md` and `public/audio/`, never `src/videos/`, `src/brands/` or the
-  rest of `public/`. Then `npm install` and `npx tsc --noEmit`; if an existing video no longer
+  rest of `public/`. Then `npm install` and `npm run typecheck`; if an existing video no longer
   compiles, fix it to the new kit API. Say in one line that you updated the video tools.
 
 ## 3. Understand the product (the most important step)
@@ -206,7 +206,7 @@ Follow references/pacing.md. Wait for a yes or changes.
 - Sound: silent unless they chose sound effects; then `sound: true` and quiet `<Sfx>` cues on things
   that happen (references/audio.md). Never music.
 - In your own scenes every line stays up for `readingFrames(text)` from its first word.
-- `npx tsc --noEmit` must pass.
+- `npm run typecheck` must pass.
 
 ## 6. Check it, then show it
 
