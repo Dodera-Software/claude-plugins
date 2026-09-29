@@ -9,16 +9,24 @@
     {
       "name": "video-kit",
       "source": {
-        "source": "github",
-        "repo": "Dodera-Software/video-kit"
+        "source": "url",
+        "url": "https://github.com/Dodera-Software/video-kit.git"
       },
       "description": "Make launch videos, feature teasers and social clips for your product, from your codebase: /video-kit:make. Rendered from code with Remotion.",
-      "author": { "name": "Dodera Software" },
+      "author": {
+        "name": "Dodera Software"
+      },
       "homepage": "https://github.com/Dodera-Software/video-kit",
       "repository": "https://github.com/Dodera-Software/video-kit",
       "license": "MIT",
       "category": "design",
-      "keywords": ["video", "remotion", "launch video", "motion design", "marketing"]
+      "keywords": [
+        "video",
+        "remotion",
+        "launch video",
+        "motion design",
+        "marketing"
+      ]
     }
   ]
 }

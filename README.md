@@ -22,5 +22,6 @@ Or add the marketplace and install in one step (Claude Code v2.1.275+):
 ## Adding a plugin
 
 Each plugin lives in its own repository. Add an entry to `.claude-plugin/marketplace.json` with a
-`github` source pointing at it, and the display fields (`description`, `author`, `homepage`,
+`url` source set to the repository's HTTPS clone URL (a `github` source may clone over SSH, which
+fails for anyone without a GitHub SSH key), and the display fields (`description`, `author`, `homepage`,
 `license`), which users see before they install. Then run `claude plugin validate .` and push.
