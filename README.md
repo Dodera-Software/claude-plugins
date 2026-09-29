@@ -9,6 +9,8 @@ every plugin here shows up in `/plugin` → Discover.
 
 ## Plugins
 
+<a href="plugins/video-kit"><img src="media/video-kit/dodera-from-its-website.gif" width="560" alt="A video made by video-kit from doderasoft.com alone"></a>
+
 | Plugin | What it does | Install |
 | --- | --- | --- |
 | [video-kit](plugins/video-kit) | Makes launch videos, feature teasers, social clips and what's-new videos for your product from its code or website, for anyone, no video skills needed: `/video-kit:make`, `/video-kit:website`, `/video-kit:changelog` (Mac, or Linux with Docker) | `/plugin install video-kit@dodera` |

@@ -12,8 +12,10 @@ npm install
 ./render.sh sheet reference.mp4      # contact sheets of a video you want to learn from
 npm run timeline                     # where each scene starts
 npm run studio                       # live preview with a timeline
-./render.sh clean                    # remove old render images (about 1.9 GB each)
+./render.sh setup                    # get the render image ready (first time only: about 3 GB, 5–10 minutes)
+./render.sh clean                    # remove old render images (also done after every new build)
 ./render.sh capture <folder>         # real screenshots of the running app, from src/videos/<folder>/capture.json
+./render.sh site <url> <folder>      # colours, fonts, logo, wording and screenshots of a public website
 ```
 
 Rendering runs in Docker (no browser on your machine); the script starts Docker if needed and

@@ -82,6 +82,20 @@ Then `/video-kit:make …`. Check that the questions come first, that setup copi
 that the storyboard comes before any code, and that the render finishes.
 `claude plugin validate plugins/video-kit` must pass.
 
+### CI
+
+`.github/workflows/video-kit.yml` runs on every push touching the plugin: both validators, the
+kit's type check and a full render of the example (timing the first-time image build). It calls
+no model, so it costs nothing. There are no `claude plugin eval` suites on purpose: each run spends
+API credits.
+
+### README media
+
+`media/video-kit/` (outside the plugin, so installs don't download it) holds the README's GIF
+previews; the full MP4s are assets on a GitHub release. GIFs from the 1080p render with Remotion's
+bundled ffmpeg (it has no `fps` filter; use `-r`):
+`npx remotion ffmpeg -i in.mp4 -r 15 -filter_complex "scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=160:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" out.gif`.
+
 ### Releasing
 
 1. Bump `version` in `plugins/video-kit/.claude-plugin/plugin.json`. Installed copies are pinned to the version they

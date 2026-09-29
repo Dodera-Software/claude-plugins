@@ -9,7 +9,8 @@ argument-hint: "[website address] [optional: what the video is for, length, form
 The request: $ARGUMENTS
 
 1. **The address.** Take the website address from the request. If there is none, ask for it in one
-   plain sentence ("Which website is the video about? For example acme.com") and wait. Accept it
+   plain sentence ("Which website is the video about? For example acme.com"), with nothing before
+   it, and wait. Accept it
    without `https://` and add it yourself. Check it opens
    (`curl -sL -o /dev/null -w "%{http_code}" <address>`); if it doesn't, say so plainly and ask
    again.

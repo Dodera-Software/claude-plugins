@@ -102,6 +102,11 @@ look like, see "A reference" in references/recipes.md.
 
 Check what's needed before doing any work, so nobody finds out after 20 minutes:
 
+- **Claude Code on their computer.** Making a video runs programs on the person's computer. If you
+  can't run commands here (the claude.ai chat, the mobile app, Cowork), say so in plain words right
+  after the brief: "Making the video needs Claude Code on your Mac: the Claude desktop app's Code
+  tab, or the terminal. Open it there and ask again." You can still show the plan in words; don't
+  pretend to make the video.
 - **A Mac, or Linux with Docker already running.** Making the video relies on macOS tools to open
   and close Docker Desktop and show the result. On Windows, say plainly that video-kit works on a
   Mac (or Linux) for now, and stop there.
@@ -117,6 +122,12 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
   `.gitignore`, and exclude `video/` from the linter, type checker, tests and Docker build context
   where they would pick it up. Tell the person in one line that you added a `video` folder to the
   project, which a developer may want to glance at. Don't commit or push unless they ask.
+- **Start the video app early.** Once the studio is there and Docker Desktop is installed, run
+  `./render.sh setup` in `video/` in the background and carry on. The first time on a computer it
+  downloads about 3 GB and takes 5–10 minutes; after that, seconds. If `docker images -q video-kit`
+  printed nothing before you started it, tell the person in one line: "Setting up the video app in
+  the background: a one-time wait of about 5–10 minutes, and I'll keep working meanwhile." Let it
+  finish before any other `render.sh` command.
 - `video/src/videos/acme-teaser` and `video/src/brands/acme` are a made-up example; delete them once
   the product's own video exists. If `video/` exists already, add the new video next to the others.
 - **An older studio:** if `video/` came from an earlier version (it lacks files the template has,

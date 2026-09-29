@@ -6,6 +6,7 @@
 #   ./render.sh AcmeTeaser-en            → out/acme-teaser-en-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg
 #   ./render.sh AcmeTeaser-en still 120 900  single frames, to check a layout
 #   ./render.sh sheet ~/Downloads/reference.mp4  2 frames a second on contact sheets, to study a video
+#   ./render.sh setup                    get the render image ready (the first time: about 3 GB, 5–10 minutes)
 #   ./render.sh clean                    remove render images other than this one (also done after every new build)
 #   ./render.sh capture <folder>         screenshots of the running app from src/videos/<folder>/capture.json
 #                                        (login details as VIDEO_* environment variables)
@@ -92,12 +93,17 @@ if [ "$VIDEO" = "clean" ]; then
 fi
 
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  echo "Setting up the video app: a one-time download of about 3 GB, usually 5–10 minutes..."
   docker build -t "$IMAGE" .
   remove_old_images
 fi
 # A build interrupted by Docker stopping can leave empty files in the image; rebuild it clean.
 if [ "$(docker run --rm --entrypoint sh "$IMAGE" -c 'wc -c < package.json')" -lt 10 ]; then
   docker build --no-cache -t "$IMAGE" .
+fi
+if [ "$VIDEO" = "setup" ]; then
+  echo "The video app is ready."
+  exit 0
 fi
 mkdir -p out
 

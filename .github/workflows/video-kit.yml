@@ -1,0 +1,56 @@
+name: video-kit
+
+# On every change: the manifests validate, the kit type-checks and the example video renders with
+# no glitches. Free on a public repository; nothing here calls a model.
+on:
+  push:
+    branches: [main]
+    paths: ['plugins/video-kit/**', '.claude-plugin/**', '.github/workflows/video-kit.yml']
+  pull_request:
+    paths: ['plugins/video-kit/**', '.claude-plugin/**', '.github/workflows/video-kit.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: claude plugin validate .
+      - run: claude plugin validate plugins/video-kit
+
+  kit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: plugins/video-kit/skills/make/template
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: plugins/video-kit/skills/make/template/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - run: npm run timeline
+      - name: Set up the render image (timed, as a first-time user would)
+        run: time ./render.sh setup
+      - name: Render the example
+        run: ./render.sh AcmeTeaser-en
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acme-teaser-en
+          path: |
+            plugins/video-kit/skills/make/template/out/*.mp4
+            plugins/video-kit/skills/make/template/out/*.png
+            plugins/video-kit/skills/make/template/out/*.jpg
+          retention-days: 7
+
