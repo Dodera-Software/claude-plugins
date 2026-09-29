@@ -1,7 +1,9 @@
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
+import { BrandMark } from '../components/BrandMark'
 import { lockupSizes, useShape } from '../layout'
+import { inkOn, useLook } from '../look'
 import { RevealWords } from '../components/RevealWords'
 import { ToolIcon } from '../components/ToolIcon'
 import { progress, readingFrames } from '../motion'
@@ -23,9 +25,10 @@ export function endCardFrames(props: EndCardProps): number {
 export function EndCard({ tagline, taglineAccent, worksWith, cta }: EndCardProps) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
-  const { colors, Logo, name, domain } = useBrand()
+  const { colors, name, domain } = useBrand()
   const { shape, width, pad } = useShape()
   const size = lockupSizes(shape, width, name)
+  const { type } = useLook()
   const logo = spring({ frame, fps, config: { damping: 18, stiffness: 110 } })
   const works = progress(frame, 90, 30)
   const button = progress(frame, 130, 36)
@@ -34,9 +37,9 @@ export function EndCard({ tagline, taglineAccent, worksWith, cta }: EndCardProps
       <Sfx cue="chime" at={2} volume={0.4} />
       <div style={{ display: 'flex', flexDirection: size.stacked ? 'column' : 'row', alignItems: 'center', gap: size.stacked ? 28 : 36 }}>
         <div style={{ transform: `scale(${logo})` }}>
-          <Logo size={size.logo} />
+          <BrandMark size={size.logo} />
         </div>
-        <div style={{ fontSize: size.name, fontWeight: 600, letterSpacing: '-0.045em', color: colors.text, whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: size.name, fontWeight: Math.max(600, type.weight), letterSpacing: '-0.045em', color: colors.text, whiteSpace: 'nowrap' }}>
           <RevealWords text={name} start={14} />
         </div>
       </div>
@@ -50,7 +53,7 @@ export function EndCard({ tagline, taglineAccent, worksWith, cta }: EndCardProps
         </div>
       )}
       <div style={{
-        marginTop: 48, padding: '16px 34px', borderRadius: 40, background: colors.accent, color: '#fff',
+        marginTop: 48, padding: '16px 34px', borderRadius: 40, background: colors.accent, color: inkOn(colors.accent),
         fontSize: 30, fontWeight: 600, opacity: button, transform: `translateY(${(1 - button) * 16}px)`
       }}
       >

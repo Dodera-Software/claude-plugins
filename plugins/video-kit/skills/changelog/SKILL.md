@@ -32,7 +32,8 @@ Say nothing if it's up to date, and skip it silently if the check fails (offline
 ## 1. Since when
 
 If the request doesn't say, ask in one round (AskUserQuestion), together with the make skill's
-Format, Sound and Language questions (four questions at most per round):
+Format and Sound questions (four questions at most per round); Look and Language come in a second
+round with the changes to pick, as in the make skill:
 
 | Header | Question | Options |
 | --- | --- | --- |
@@ -52,18 +53,18 @@ Format, Sound and Language questions (four questions at most per round):
 
 Then ask (AskUserQuestion, multiple choice allowed) "Which changes should the video show?", with
 the candidates in plain words (label: what it lets the user do; description: where they'll find
-it). Recommend the headliners.
+it). Recommend the headliners. Ask the make skill's Look and Language questions in the same round.
 
 ## 3. The shape
 
 | Scene | What |
 | --- | --- |
 | Cover | "What's new in <Product>" with the version or month as `cover.title` |
-| One per headliner, 5–8 s | `ChapterTitle` (label NEW, the benefit as the title, a short muted line) with the change shown: rebuilt screen or real screenshots, as chosen |
-| Also new, if any | `PromiseList` with the small items, one line each |
+| One per headliner, 5–8 s | The change shown the way it's best shown, a different way for each: the words beside the screen (`SplitScreen`), the old way against the new (`BeforeAfter`), a command (`Terminal`), a rebuilt flow; label NEW, the benefit as the title |
+| Also new, if any | `PromiseList`, `WordSwap` or `Marquee` with the small items |
 | End | `EndCard` with the product's site |
 
-Headliners grow out of each other (`grow` from the element that changed, `push` between features).
+Headliners grow out of each other (`grow` from the element that changed, or the look's own transitions).
 Video id `WhatsNew-<version or yyyy-mm-dd, dots as hyphens>`, e.g. `WhatsNew-v1-4-0`, so files are
 named `whats-new-v1-4-0-…`. Storyboard, stills for approval, the full video and the hand-over follow
 the make skill.
@@ -74,7 +75,9 @@ When the arguments include `--ci` (the GitHub Action does), no one is there to a
 
 - Don't ask anything. Range from the arguments: "up to <tag>" is from the release tag before it to
   that tag; "since <tag or time>" is from there to HEAD; otherwise from the latest release tag to
-  HEAD. Wide format, sound effects, English, screens recreated from the code.
+  HEAD. Wide format, silent, English, screens recreated from the code, and the look that fits the
+  product (the same one as the last what's-new video, if there is one, so the series feels
+  consistent).
 - Pick the headliners and "also new" items yourself by the rules above; skip the stills approval.
 - Set up `video/` if needed, build, check your own stills as usual, and make the video.
 - Finish by writing `video/out/whats-new-<version>.md` (the same name the video files start with,

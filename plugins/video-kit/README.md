@@ -11,15 +11,34 @@ questions, approve a plan, and get a finished 4K video.
 ```
 
 Claude asks what kind of video (launch film, feature teaser, social clip), where it will be shown,
-the tone, sound effects or silent, which feature or story, which languages, and whether to show the
-product recreated from its code or as real screenshots. Then it reads how your product works,
-shows you the plan and a few still images to approve, and makes the video.
+sound effects or silent (silent unless you ask), which feature or story, how it should look, which
+languages, and whether to show the product recreated from its code or as real screenshots. Then it
+reads how your product works, comes up with an idea for this video, shows you the plan and a few
+still images to approve, and makes the video.
+
+**Every video is its own.** Four looks change the whole feel: calm and elegant, bold (your brand
+colour fills the screen), technical (dark, for developer tools) and playful. Claude builds each
+video around its own idea and one moment only your product could have, from a wide range of
+scenes (numbers counting up, words swapping, a typing terminal, before and after, a wall of
+screens, step-by-step, quotes…), so no two videos look alike.
+
+**Describe it yourself if you like:** "open on our logo drawing itself, then show the three
+dashboards side by side" and it builds exactly that.
 
 ```
 /video-kit:make 20-second teaser for the new export feature, playful, for LinkedIn
 ```
 
 With a description, it only asks what's missing.
+
+```
+/video-kit:website acme.com
+```
+
+**No code? Just a website.** Give it a product's website (or run it without one and it asks). It
+reads the colours, logo, fonts and wording from there, takes clean screenshots of the pages
+(cookie notices hidden), and makes the video from what the site says. Works from any folder; the
+video goes in a `video` folder there.
 
 ```
 /video-kit:changelog
@@ -77,8 +96,8 @@ screenshots instead:
   kept out of your linter, build and Docker context. `video/out/` and `video/node_modules/` are
   git-ignored. See `video/README.md` for the commands.
 - **Rendering** runs in Docker, so no browser is installed on your machine. The render image is
-  about 1.9 GB, shared by every project on the same kit version; `./render.sh clean` removes old
-  ones.
+  about 2.7 GB, shared by every project on the same kit version; older versions are removed
+  automatically when a new one is built.
 - **Release videos on every release:** copy `skills/changelog/release-video.yml` to
   `.github/workflows/` and add an `ANTHROPIC_API_KEY` repository secret. Each run uses that key's
   credits.
@@ -91,7 +110,7 @@ From a clone of `Dodera-Software/claude-plugins`:
 
 ```bash
 cp -r plugins/video-kit/skills/make/template /tmp/video && cd /tmp/video && npm install
-./render.sh AcmeTeaser-en       # a 17-second teaser for a made-up product → out/ (also AcmeTeaser-es)
+./render.sh AcmeTeaser-en       # a 19-second teaser for a made-up product → out/ (also AcmeTeaser-es)
 npm run studio                  # or preview it live with a timeline
 ```
 

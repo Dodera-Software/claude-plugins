@@ -24,6 +24,8 @@ export interface Brand {
   }
   shadow: { card: string, floating: string }
   Logo: ComponentType<{ size: number }>
+  /** The logo drawn for dark backgrounds, when the brand has one; used by the technical look. */
+  LogoOnDark?: ComponentType<{ size: number }>
 }
 
 const BrandContext = createContext<Brand | null>(null)

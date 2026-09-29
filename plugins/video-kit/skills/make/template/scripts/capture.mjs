@@ -16,28 +16,14 @@
 // Steps: goto, click, fill (replace a field's value), type (key by key), press (a key), hover,
 // scroll (pixels down), wait (ms), waitFor (a selector; ::-p-text(…) matches visible text), shot (id).
 // A value starting with $ is read from the environment, so passwords never live in a file.
-import { readdirSync, readFileSync, mkdirSync, statSync } from 'node:fs'
+import { readFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import puppeteer from 'puppeteer-core'
+import { findChrome } from './chrome.mjs'
 
 const [planPath, outDir] = process.argv.slice(2)
 const plan = JSON.parse(readFileSync(planPath, 'utf8'))
 const TIMEOUT = 20000
-
-function findChrome(dir) {
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry)
-    if (statSync(path).isDirectory()) {
-      const found = findChrome(path)
-      if (found) {
-        return found
-      }
-    } else if (entry === 'headless_shell' || entry === 'chrome-headless-shell') {
-      return path
-    }
-  }
-  return null
-}
 
 function value(raw) {
   if (typeof raw !== 'string' || !raw.startsWith('$')) {
@@ -83,13 +69,9 @@ async function run(page, step) {
   }
 }
 
-const executablePath = findChrome('node_modules/.remotion')
-if (!executablePath) {
-  throw new Error('No Chrome found in node_modules/.remotion; rebuild the render image.')
-}
 mkdirSync(outDir, { recursive: true })
 const browser = await puppeteer.launch({
-  executablePath,
+  executablePath: findChrome(),
   headless: 'shell',
   acceptInsecureCerts: true,
   args: ['--no-sandbox', '--disable-dev-shm-usage', '--hide-scrollbars'],

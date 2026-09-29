@@ -6,9 +6,11 @@
 #   ./render.sh AcmeTeaser-en            → out/acme-teaser-en-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg
 #   ./render.sh AcmeTeaser-en still 120 900  single frames, to check a layout
 #   ./render.sh sheet ~/Downloads/reference.mp4  2 frames a second on contact sheets, to study a video
-#   ./render.sh clean                    remove render images other than this one (others rebuild once)
+#   ./render.sh clean                    remove render images other than this one (also done after every new build)
 #   ./render.sh capture <folder>         screenshots of the running app from src/videos/<folder>/capture.json
 #                                        (login details as VIDEO_* environment variables)
+#   ./render.sh site <url> <folder> [/page …]  colours, fonts, logo, wording and screenshots of a
+#                                        public website → public/site/<folder>/
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -74,16 +76,25 @@ if ! docker_answers; then
   fi
 fi
 
-if [ "$VIDEO" = "clean" ]; then
-  # Every render image except this project's current one, plus layers left untagged by rebuilds.
+# Every render image except this project's current one, the layers rebuilds leave untagged and the
+# build cache: each is 2-3 GB, and a new kit version makes a new one.
+remove_old_images() {
   OLD="$(docker images --format '{{.Repository}}:{{.Tag}}' | grep '^video-kit:' | grep -v "^$IMAGE$" || true)"
-  [ -n "$OLD" ] && echo "$OLD" | xargs docker rmi >/dev/null
+  [ -n "$OLD" ] && echo "$OLD" | xargs docker rmi >/dev/null 2>&1 || true
   docker image prune -f >/dev/null
+  docker builder prune -f >/dev/null
+}
+
+if [ "$VIDEO" = "clean" ]; then
+  remove_old_images
   echo "Removed: ${OLD:-nothing}" | tr '\n' ' '; echo
   exit 0
 fi
 
-docker image inspect "$IMAGE" >/dev/null 2>&1 || docker build -t "$IMAGE" .
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  docker build -t "$IMAGE" .
+  remove_old_images
+fi
 # A build interrupted by Docker stopping can leave empty files in the image; rebuild it clean.
 if [ "$(docker run --rm --entrypoint sh "$IMAGE" -c 'wc -c < package.json')" -lt 10 ]; then
   docker build --no-cache -t "$IMAGE" .
@@ -122,6 +133,15 @@ if [ "$VIDEO" = "capture" ]; then
   echo "Capturing from the running app (it must be up, with its database and demo data)..."
   PUBLIC_MODE=rw ENTRYPOINT=node remotion scripts/capture.mjs "src/videos/$FOLDER/capture.json" "public/captures/$FOLDER"
   echo "Done: public/captures/$FOLDER/"
+  exit 0
+fi
+
+if [ "$VIDEO" = "site" ]; then
+  URL="${2:?give the website address, e.g. https://example.com}"
+  FOLDER="${3:?give a folder name for what is read, e.g. launch}"
+  echo "Reading $URL (colours, fonts, logo, wording, screenshots)..."
+  PUBLIC_MODE=rw ENTRYPOINT=node remotion scripts/site.mjs "$URL" "public/site/$FOLDER" "${@:4}"
+  echo "Done: public/site/$FOLDER/"
   exit 0
 fi
 

@@ -3,7 +3,9 @@ import type { ComponentType } from 'react'
 import { AbsoluteFill } from 'remotion'
 import { SoundContext } from './audio/Sfx'
 import { BrandProvider, type Brand } from './brand'
+import { Backdrop } from './components/Backdrop'
 import { FORMATS } from './layout'
+import { LookProvider, lookColors, type LookName } from './look'
 import { FPS } from './motion'
 import { Cover, type CoverProps } from './scenes/Cover'
 import { crossfade, flood, type SceneTransition } from './transitions'
@@ -23,7 +25,12 @@ interface VideoSpec {
   brand: Brand
   format?: keyof typeof FORMATS
   scenes: Scene[]
-  /** Sound effects on (default) or a silent video. Scenes keep their cues either way. */
+  /**
+   * The video's feel over the same brand: editorial (default), bold, technical or playful. It sets
+   * colours, type, motion and what sits behind the scenes (src/kit/look.tsx).
+   */
+  look?: LookName
+  /** Silent (default), or sound effects when the person asked for them. Scenes keep their cues either way. */
   sound?: boolean
   /**
    * The composed opening frame that apps use as the video's preview: logo, name and `title`,
@@ -45,8 +52,9 @@ export interface VideoDefinition {
 }
 
 /** One video: its brand, and its scenes in order with how each one grows out of the last. */
-export function defineVideo({ id, brand, format = 'landscape', scenes: ownScenes, sound = true, cover = {} }: VideoSpec): VideoDefinition {
+export function defineVideo({ id, brand: base, format = 'landscape', look = 'editorial', scenes: ownScenes, sound = false, cover = {} }: VideoSpec): VideoDefinition {
   const { width, height } = FORMATS[format]
+  const brand = lookColors(base, look)
   const opening = cover === false ? undefined : (ownScenes[0].enter ?? flood({ x: width / 2, y: height / 2 }))
   const scenes: Scene[] = cover === false || !opening
     ? ownScenes
@@ -65,21 +73,24 @@ export function defineVideo({ id, brand, format = 'landscape', scenes: ownScenes
   function Video() {
     return (
       <BrandProvider brand={brand}>
-        <SoundContext.Provider value={sound}>
-          <AbsoluteFill style={{ background: brand.colors.canvas, fontFamily: brand.fontFamily }}>
-            <TransitionSeries>
-              {scenes.flatMap(({ component: SceneComponent, frames, enter }, index) => {
-                const transition = enter ?? crossfade()
-                return [
-                  index > 0 && <TransitionSeries.Transition key={`enter-${index}`} presentation={transition.presentation} timing={linearTiming({ durationInFrames: transition.frames })} />,
-                  <TransitionSeries.Sequence key={`scene-${index}`} durationInFrames={frames}>
-                    <SceneComponent />
-                  </TransitionSeries.Sequence>
-                ]
-              }).filter(Boolean)}
-            </TransitionSeries>
-          </AbsoluteFill>
-        </SoundContext.Provider>
+        <LookProvider look={look}>
+          <SoundContext.Provider value={sound}>
+            <AbsoluteFill style={{ background: brand.colors.canvas, fontFamily: brand.fontFamily }}>
+              <TransitionSeries>
+                {scenes.flatMap(({ component: SceneComponent, frames, enter }, index) => {
+                  const transition = enter ?? crossfade()
+                  return [
+                    index > 0 && <TransitionSeries.Transition key={`enter-${index}`} presentation={transition.presentation} timing={linearTiming({ durationInFrames: transition.frames })} />,
+                    <TransitionSeries.Sequence key={`scene-${index}`} durationInFrames={frames}>
+                      <Backdrop />
+                      <SceneComponent />
+                    </TransitionSeries.Sequence>
+                  ]
+                }).filter(Boolean)}
+              </TransitionSeries>
+            </AbsoluteFill>
+          </SoundContext.Provider>
+        </LookProvider>
       </BrandProvider>
     )
   }

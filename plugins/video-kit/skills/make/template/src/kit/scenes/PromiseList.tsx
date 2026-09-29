@@ -3,6 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from 'remotion'
 import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { FORMATS, padFor, shapeOf, useShape, type Shape } from '../layout'
+import { inkOn, lookFor, useLook, type LookName } from '../look'
 import { progress, readingFrames } from '../motion'
 
 export interface PromiseListProps {
@@ -49,19 +50,20 @@ function top(shape: Shape, width: number, height: number, items: PromiseListProp
 
 /**
  * The headline promise's icon tile, where it sits on screen: pass it to `grow(…)` so the next scene
- * opens out of it. `format` is the video's format.
+ * opens out of it. `format` and `look` are the video's.
  */
-export function promiseListLeadIcon(props: PromiseListProps, format: keyof typeof FORMATS = 'landscape') {
+export function promiseListLeadIcon(props: PromiseListProps, format: keyof typeof FORMATS = 'landscape', look: LookName = 'editorial') {
   const { width, height } = FORMATS[format]
   const shape = shapeOf(width, height)
   const { icon, radius } = sizes(shape)
-  return { x: shape === 'wide' ? 240 : padFor(shape), y: top(shape, width, height, props.items), width: icon, height: icon, radius }
+  return { x: shape === 'wide' ? 240 : padFor(shape), y: top(shape, width, height, props.items), width: icon, height: icon, radius: radius * lookFor(look).round }
 }
 
 /** The closing claims, building one under another. */
 export function PromiseList({ items }: PromiseListProps) {
   const frame = useCurrentFrame()
   const { colors } = useBrand()
+  const { type, motion, round } = useLook()
   const { shape, wide, width, height, pad } = useShape()
   const size = sizes(shape)
   const side = wide ? 240 : pad
@@ -69,25 +71,26 @@ export function PromiseList({ items }: PromiseListProps) {
     <AbsoluteFill style={{ paddingTop: top(shape, width, height, items), paddingLeft: side, paddingRight: side, gap: size.gap }}>
       {items.map((item, index) => {
         const at = FIRST_AT + index * EVERY
-        const shown = progress(frame, at, 36)
+        const shown = motion.ease(progress(frame, at, Math.max(20, motion.duration), t => t))
         const lead = index === 0
         const Icon = item.icon
         return (
           <div
             key={item.text}
             style={{
-              display: 'flex', alignItems: wide ? 'center' : 'flex-start', gap: wide ? 32 : 24, opacity: shown,
-              transform: `translateX(${(1 - shown) * -30}px)`, filter: `blur(${(1 - shown) * 6}px)`
+              display: 'flex', alignItems: wide ? 'center' : 'flex-start', gap: wide ? 32 : 24, opacity: Math.min(1, shown * 1.5),
+              transform: `translateX(${(1 - shown) * -30}px) scale(${1 - (1 - shown) * motion.pop * 0.5})`,
+              filter: motion.blur ? `blur(${Math.max(0, 1 - shown) * 6}px)` : undefined
             }}
           >
             <Sfx cue={index % 2 ? 'tickAlt' : 'tick'} at={at} volume={0.25} />
-            <div style={{ flexShrink: 0, width: size.icon, height: size.icon, borderRadius: size.radius, background: lead ? colors.accent : colors.accentSoft, display: 'grid', placeItems: 'center' }}>
-              <Icon size={size.icon * 0.45} color={lead ? '#fff' : colors.accent} strokeWidth={1.8} />
+            <div style={{ flexShrink: 0, width: size.icon, height: size.icon, borderRadius: size.radius * round, background: lead ? colors.accent : colors.accentSoft, display: 'grid', placeItems: 'center' }}>
+              <Icon size={size.icon * 0.45} color={lead ? inkOn(colors.accent) : colors.accent} strokeWidth={1.8} />
             </div>
             <div style={{
               maxWidth: width - 2 * side - size.icon - (wide ? 32 : 24), fontSize: lead ? size.lead : size.rest, lineHeight: 1.12,
               paddingTop: wide ? 0 : (size.icon - (lead ? size.lead : size.rest) * 1.12) / 2,
-              fontWeight: 600, letterSpacing: '-0.035em', color: lead ? colors.text : colors.toned
+              fontWeight: Math.max(600, type.weight), letterSpacing: type.tracking, color: lead ? colors.text : colors.toned
             }}
             >
               {item.text}

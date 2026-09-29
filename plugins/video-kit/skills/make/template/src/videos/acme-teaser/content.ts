@@ -1,5 +1,5 @@
 import { BellOff, CircleCheck, UserCheck } from 'lucide-react'
-import type { ChatPileUpProps, EndCardProps, PromiseListProps, TitleCardProps } from '../../kit'
+import type { ChatPileUpProps, EndCardProps, PromiseListProps, WordSwapProps } from '../../kit'
 
 /** Every word of the example teaser, per language. Acme Tasks is made up; so are these people. */
 
@@ -11,7 +11,7 @@ const TOM = { initials: 'TR', name: 'Tom Reyes', tint: '#DCFCE7', ink: '#15803D'
 export interface Words {
   cover: string
   hook: ChatPileUpProps
-  intro: TitleCardProps
+  intro: WordSwapProps
   promises: PromiseListProps
   end: EndCardProps
 }
@@ -28,7 +28,7 @@ export const WORDS: Record<'en' | 'es', Words> = {
       ],
       punchline: ['Sound', 'familiar?']
     },
-    intro: { eyebrow: 'MEET ACME TASKS', title: 'Every task has an owner.', aside: 'Even the boring ones.', accent: ['owner'] },
+    intro: { eyebrow: 'MEET ACME TASKS', lead: 'Every task has', words: ['an owner.', 'a deadline.', 'a finish line.'] },
     promises: {
       items: [
         { icon: UserCheck, text: 'One owner per task, always.' },
@@ -49,7 +49,7 @@ export const WORDS: Record<'en' | 'es', Words> = {
       ],
       punchline: ['¿Te', 'suena?']
     },
-    intro: { eyebrow: 'ESTO ES ACME TASKS', title: 'Cada tarea tiene un responsable.', aside: 'Incluso las aburridas.', accent: ['responsable'] },
+    intro: { eyebrow: 'ESTO ES ACME TASKS', lead: 'Cada tarea tiene', words: ['un responsable.', 'una fecha.', 'un final.'] },
     promises: {
       items: [
         { icon: UserCheck, text: 'Un responsable por tarea, siempre.' },

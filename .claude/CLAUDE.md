@@ -33,8 +33,9 @@ video (`acme`) are made up, and real products' videos live in their own repos.
 ```
 .claude-plugin/plugin.json        the plugin: name video-kit, version (bump it, see Releasing)
 skills/make/SKILL.md              the workflow Claude follows: brief (questionnaire), readiness and setup, investigation, storyboard, build, stills, render
+skills/website/SKILL.md           /video-kit:website: asks for the address, then the make workflow in website mode
 skills/changelog/                 /video-kit:changelog (what's-new videos from recent changes) and release-video.yml, a GitHub Action template
-skills/make/references/*.md       details SKILL.md points to: scenes, product-scenes, style, pacing, audio, brand, recipes
+skills/make/references/*.md       details SKILL.md points to: scenes, product-scenes, style, pacing, audio, brand, recipes, capture, website
 skills/make/template/             the studio copied into a product repo as video/
   src/kit/                        shared: motion helpers, brand context, components, scenes, transitions, sound cues, defineVideo
   src/brands/acme/                example brand (tokens, logo, Brand object)
@@ -64,8 +65,10 @@ npm run studio                           # live preview
   `ToolIcon`).
 - `references/scenes.md`, `product-scenes.md` and `audio.md` describe the kit's API. Change them in
   the same commit as the code, or Claude will use the kit wrong in users' repos.
-- After a kit change, render the example end to end and look at stills of every scene and the
-  middle of every transition.
+- Kit scenes follow the look (`useLook()`, `useBrand()` colours adapted by `lookColors`). After a
+  kit change, look at stills of the changed scenes in all four looks and in wide, square and tall
+  frames (a scratch video listing the scenes with `inFormats` per look is the quickest way), then
+  render the example end to end.
 
 ### Testing the plugin as a user would
 

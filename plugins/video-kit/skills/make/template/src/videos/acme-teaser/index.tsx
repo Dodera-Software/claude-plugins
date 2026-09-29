@@ -1,7 +1,7 @@
 import { acme } from '../../brands/acme'
 import {
   ChatPileUp, chatPileUpFrames, EndCard, endCardFrames, defineVideo, grow, inLanguages, PromiseList,
-  promiseListFrames, promiseListLeadIcon, push, TitleCard, titleCardFrames
+  promiseListFrames, promiseListLeadIcon, push, WordSwap, wordSwapFrames
 } from '../../kit'
 import { WORDS } from './content'
 
@@ -16,7 +16,7 @@ export const acmeTeaser = inLanguages(WORDS, words => defineVideo({
   cover: { title: words.cover },
   scenes: [
     { component: () => <ChatPileUp {...words.hook} />, frames: chatPileUpFrames(words.hook) },
-    { component: () => <TitleCard {...words.intro} />, frames: titleCardFrames(words.intro), enter: push('from-right') },
+    { component: () => <WordSwap {...words.intro} />, frames: wordSwapFrames(words.intro), enter: push('from-right') },
     { component: () => <PromiseList {...words.promises} />, frames: promiseListFrames(words.promises), enter: push('from-right') },
     // The first promise's icon opens into the end card.
     { component: () => <EndCard {...words.end} />, frames: endCardFrames(words.end), enter: grow({ ...promiseListLeadIcon(words.promises), color: acme.colors.accent }) }

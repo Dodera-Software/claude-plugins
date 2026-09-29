@@ -4,8 +4,9 @@ The kit ships sound effects only, all CC0 (public domain): Kenney's "Interface S
 so there's nothing to license. If someone wants a music bed, they add a track they have the rights
 to in their editor after the render.
 
-Ask whether they want sound effects at all. `defineVideo({ sound: false })` renders a silent video:
-every `<Sfx>` in it, including the kit scenes' own, stays quiet, so switching back is one word.
+Videos are silent unless the person chose sound effects in the brief. `defineVideo({ sound: true })`
+turns them on; without it every `<Sfx>`, including the kit scenes' own, stays quiet, so switching is
+one word either way.
 
 ## Sound effects
 

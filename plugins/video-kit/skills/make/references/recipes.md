@@ -7,24 +7,25 @@ If they mention a video they'd like theirs to feel like, ask them to put the fil
 Read them and note its beats, how each scene becomes the next, camera moves, colours and type.
 Borrow structure and rhythm, never another company's brand or content.
 
-Starting structures for the usual requests. Each says what to find out, how it should look, what
-happens when, and what goes wrong. Adapt one in the storyboard; don't follow it blindly.
+Starting structures for the usual requests. Each says what to find out, what each beat is for and
+a few ways to fill it, and what goes wrong. They are skeletons, not videos: your idea for the
+product decides the scenes (style.md, "Every video is its own"), and no two videos should fill the
+beats the same way.
 
 ## Launch film (45–75 s, landscape)
 
 **Find out:** the product's one-line promise, the problem its users complain about in their own
 words, 3–4 features that exist today, the demo data, where to send people.
 
-**Direction:** the problem, then the product, then proof, then trust. Restraint, the brand's
-canvas, one accent. Every scene grows out of the previous one.
+**Direction:** a hook, then the product, then proof, then trust, carried by your idea.
 
-| Time | Scene | Becomes the next by |
+| Time | Beat | Ways to fill it |
 | --- | --- | --- |
-| 0–4 s | `ChatPileUp`: the problem as a team chat, a punchline | flood from the punchline |
-| 4–12 s | `ScatterToLogo`: the answer is scattered across tools; it folds into the logo and tagline | the logo tile grows into the page |
-| 12–40 s | 3–4 product scenes, one idea each: `ChapterTitle` plus a real flow in the rebuilt UI | a card, a clicked element or a highlight grows or floods into the next |
-| 40–60 s | what makes it different, shown side by side | push |
-| 60–70 s | `PromiseList`, then `EndCard` | the first promise's icon grows into the end card |
+| 0–5 s | Hook | the problem as a `ChatPileUp`; a striking number from its own source (`BigNumber`); the range it covers (`WordSwap`); its CLI running (`Terminal`); your signature moment |
+| 5–12 s | What it is | pieces folding into the logo (`ScatterToLogo`); the promise beside the product (`SplitScreen`); the promise alone (`TitleCard`) |
+| 12–40 s | 3–4 things it does, one per scene | real flows in the rebuilt UI or captured screens; `Steps` for a process; `ScreenMosaic` for breadth; your own scenes |
+| 40–55 s | Why it's different | `BeforeAfter`; a real quote (`BigQuote`); what it works with (`Marquee`) |
+| 55–70 s | Close | `PromiseList`, `WordSwap` or one last `BigNumber`, then `EndCard` |
 
 **Gotchas:** product scenes need 5–9 s each or the text can't be read; the logo must land before
 10 s or viewers don't know what they're watching; take `grow` boxes from stills taken after camera
@@ -37,11 +38,11 @@ in an assistant), 2–3 true claims about it, read from its code including its l
 
 **Direction:** one feature, one flow, no tour. Open on the benefit, show it working once, close.
 
-| Time | Scene | Becomes the next by |
+| Time | Beat | Ways to fill it |
 | --- | --- | --- |
-| 0–5 s | `TitleCard`: NEW IN PRODUCT, the benefit, a muted joke | push |
-| 5–15 s | the feature working: `ChapterTitle` left, the UI right | the window grows into the list |
-| 15–21 s | `PromiseList`, 3 items | the first icon grows into the end card |
+| 0–5 s | The benefit | `TitleCard` (NEW IN PRODUCT); `WordSwap` of what it handles; `BeforeAfter` of the old way |
+| 5–15 s | It working, once | the rebuilt UI or captured screens beside the words (`SplitScreen`) or full frame; `Terminal` for a CLI |
+| 15–21 s | What to know | `PromiseList` or `Steps`, 3 items; a `BigNumber` it really states |
 | 21–26 s | `EndCard` | — |
 
 **Gotchas:** claims come from the feature's code, limits included ("encrypted end to end" only

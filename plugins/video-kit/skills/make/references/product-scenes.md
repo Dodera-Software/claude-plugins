@@ -5,6 +5,16 @@ They are specific to one product, so they live in the video's folder (`scenes/`,
 These patterns are proven; adapt them. Each is described for a wide frame; for square and tall
 videos, stack them with `useShape()` (scenes.md, "Square and tall").
 
+Your own scenes follow the video's look like kit scenes do: colours from `useBrand()` (already
+adapted: dark in technical, the brand colour as canvas in bold), and from `useLook()` the headline
+`type.weight` and `type.tracking`, `motion.ease` and timing for things arriving, `round` for corner
+radii and `align`. Text in `RevealWords` and `ChapterTitle` follows it by itself. The rebuilt
+product UI itself keeps the product's real colours: it's the product, shown on the look's canvas.
+
+The original scene for your idea (style.md, "Your own idea first") lives here too. Build it from
+the product's own shapes and words, with the kit's helpers, and give it a `…Frames()` from its
+words like any kit scene.
+
 ## The whole app, full frame
 
 Rebuild the app shell (sidebar, header, main sheet) at a real viewport, 1440×810, and scale it to

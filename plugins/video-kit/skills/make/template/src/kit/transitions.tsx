@@ -1,6 +1,9 @@
 import type { TransitionPresentation, TransitionPresentationComponentProps } from '@remotion/transitions'
 import { fade } from '@remotion/transitions/fade'
+import { none } from '@remotion/transitions/none'
+import { pushCut as remotionPushCut } from '@remotion/transitions/push-cut'
 import { slide, type SlideDirection } from '@remotion/transitions/slide'
+import { wipe as remotionWipe, type WipeDirection } from '@remotion/transitions/wipe'
 import { AbsoluteFill, useVideoConfig } from 'remotion'
 import { useBrand } from './brand'
 import { easeInOut, mix } from './motion'
@@ -95,6 +98,21 @@ export function grow(from: GrowProps, frames = 36): SceneTransition {
 /** Pages push: for two scenes of the same kind, side by side in the story. */
 export function push(direction: SlideDirection = 'from-right', frames = 30): SceneTransition {
   return transition(slide({ direction }), frames)
+}
+
+/** A hard edge sweeps across and leaves the next scene behind it: bold, graphic. */
+export function wipe(direction: WipeDirection = 'from-left', frames = 24): SceneTransition {
+  return transition(remotionWipe({ direction }), frames)
+}
+
+/** A punchy zoom cut: the next beat hits. For bold and playful looks. No flash: a one-frame strobe reads as a glitch. */
+export function pushCut(frames = 18): SceneTransition {
+  return transition(remotionPushCut({ flashOpacity: 0 }), frames)
+}
+
+/** No transition at all, on the beat. Technical and bold looks cut; calm ones rarely do. */
+export function cut(): SceneTransition {
+  return transition(none(), 1)
 }
 
 /** The fallback. Use it only when nothing on screen can become the next scene. */

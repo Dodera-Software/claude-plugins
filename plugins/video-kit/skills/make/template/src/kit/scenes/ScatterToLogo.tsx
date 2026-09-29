@@ -1,6 +1,7 @@
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
+import { BrandMark } from '../components/BrandMark'
 import { fitText, lockupSizes, useShape, type Shape } from '../layout'
 import { RevealWords } from '../components/RevealWords'
 import { SnippetCard } from '../components/SnippetCard'
@@ -43,7 +44,7 @@ export function scatterToLogoFrames(props: ScatterToLogoProps): number {
 export function ScatterToLogo(props: ScatterToLogoProps) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
-  const { colors, Logo, name } = useBrand()
+  const { colors, name } = useBrand()
   const { shape, wide, width, height, pad } = useShape()
   const places = PLACES[shape]
   const center: [number, number] = [width / 2, height / 2]
@@ -98,7 +99,7 @@ export function ScatterToLogo(props: ScatterToLogoProps) {
           ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: mix(0, 40, slide) }}>
                 <div style={{ transform: `scale(${logo})`, opacity: Math.min(1, logo * 2) }}>
-                  <Logo size={148} />
+                  <BrandMark size={148} />
                 </div>
                 <div style={{ maxWidth: mix(0, 1200, slide), overflow: 'hidden', whiteSpace: 'nowrap' }}>
                   {frame >= convergeAt + 110 && (
@@ -112,7 +113,7 @@ export function ScatterToLogo(props: ScatterToLogoProps) {
           : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
                 <div style={{ transform: `scale(${logo})`, opacity: Math.min(1, logo * 2) }}>
-                  <Logo size={lockup.logo + 20} />
+                  <BrandMark size={lockup.logo + 20} />
                 </div>
                 <div style={{ height: lockup.name * 1.2, fontSize: lockup.name, fontWeight: 600, letterSpacing: '-0.045em', color: colors.text, whiteSpace: 'nowrap' }}>
                   {frame >= convergeAt + 110 && <RevealWords text={name} start={convergeAt + 120} />}

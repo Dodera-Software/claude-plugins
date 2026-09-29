@@ -9,9 +9,12 @@
     "timeline": "node scripts/timeline.mjs"
   },
   "dependencies": {
+    "@ghostery/adblocker-playwright": "2.18.2",
     "@remotion/cli": "4.0.529",
     "@remotion/google-fonts": "4.0.529",
     "@remotion/transitions": "4.0.529",
+    "culori": "4.0.2",
+    "dembrandt": "0.36.0",
     "lucide-react": "^1.48.0",
     "puppeteer-core": "^25.12.0",
     "react": "^19.0.0",
@@ -20,6 +23,7 @@
     "simple-icons": "^16.33.0"
   },
   "devDependencies": {
+    "@types/culori": "4.0.1",
     "@types/react": "^19.0.0",
     "esbuild": "^0.28.1",
     "typescript": "^5.9.3"

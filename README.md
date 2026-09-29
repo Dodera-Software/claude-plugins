@@ -11,7 +11,7 @@ every plugin here shows up in `/plugin` → Discover.
 
 | Plugin | What it does | Install |
 | --- | --- | --- |
-| [video-kit](plugins/video-kit) | Makes launch videos, feature teasers, social clips and what's-new videos for your product from its code, for anyone, no video skills needed: `/video-kit:make`, `/video-kit:changelog` (Mac, or Linux with Docker) | `/plugin install video-kit@dodera` |
+| [video-kit](plugins/video-kit) | Makes launch videos, feature teasers, social clips and what's-new videos for your product from its code or website, for anyone, no video skills needed: `/video-kit:make`, `/video-kit:website`, `/video-kit:changelog` (Mac, or Linux with Docker) | `/plugin install video-kit@dodera` |
 
 Or add the marketplace and install in one step (Claude Code v2.1.275+):
 
