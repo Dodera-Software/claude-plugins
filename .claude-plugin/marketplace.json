@@ -1,0 +1,24 @@
+{
+  "name": "dodera",
+  "description": "Claude Code plugins by Dodera Software",
+  "owner": {
+    "name": "Dodera Software",
+    "url": "https://github.com/Dodera-Software"
+  },
+  "plugins": [
+    {
+      "name": "video-kit",
+      "source": {
+        "source": "github",
+        "repo": "Dodera-Software/video-kit"
+      },
+      "description": "Make launch videos, feature teasers and social clips for your product, from your codebase: /video-kit:make. Rendered from code with Remotion.",
+      "author": { "name": "Dodera Software" },
+      "homepage": "https://github.com/Dodera-Software/video-kit",
+      "repository": "https://github.com/Dodera-Software/video-kit",
+      "license": "MIT",
+      "category": "design",
+      "keywords": ["video", "remotion", "launch video", "motion design", "marketing"]
+    }
+  ]
+}
