@@ -1,11 +1,24 @@
 {
   "name": "video-kit",
   "description": "Make launch videos, feature teasers, social clips and what's-new videos for your product, from its code or just its website: /video-kit:make, /video-kit:website and /video-kit:changelog. Built for anyone, no video skills needed.",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "author": {
     "name": "Dodera Software"
   },
   "repository": "https://github.com/Dodera-Software/claude-plugins",
   "license": "MIT",
-  "homepage": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/video-kit"
+  "homepage": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/video-kit",
+  "keywords": [
+    "video",
+    "product video",
+    "launch video",
+    "marketing",
+    "remotion",
+    "motion graphics",
+    "changelog",
+    "social media"
+  ],
+  "documentationUrl": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/video-kit#readme",
+  "privacyPolicyUrl": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/video-kit#what-leaves-your-computer",
+  "supportUrl": "https://github.com/Dodera-Software/claude-plugins/issues"
 }

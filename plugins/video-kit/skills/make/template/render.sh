@@ -124,11 +124,19 @@ remotion() {
     "$IMAGE" "$@"
 }
 
+# On Linux the container writes as root; hand what it made back to whoever runs this, or they
+# couldn't delete it (Docker Desktop on a Mac already does this).
+hand_back() {
+  [ "$(uname)" = Linux ] || return 0
+  PUBLIC_MODE=rw ENTRYPOINT=chown remotion -R "$(id -u):$(id -g)" "$@"
+}
+
 if [ "$VIDEO" = "sheet" ]; then
   NAME="$(basename "${REFERENCE%.*}")"
   EXTRA_MOUNT="$(dirname "$REFERENCE"):/reference:ro" ENTRYPOINT=ffmpeg remotion -v error -y \
     -i "/reference/$(basename "$REFERENCE")" -vf "fps=2,scale=480:-2,tile=5x4" \
     "out/$NAME-sheet-%02d.png"
+  hand_back out
   echo "Contact sheets: out/$NAME-sheet-*.png (20 frames each, 0.5 s apart)"
   exit 0
 fi
@@ -138,6 +146,7 @@ if [ "$VIDEO" = "capture" ]; then
   [ -f "src/videos/$FOLDER/capture.json" ] || { echo "No src/videos/$FOLDER/capture.json"; exit 1; }
   echo "Capturing from the running app (it must be up, with its database and demo data)..."
   PUBLIC_MODE=rw ENTRYPOINT=node remotion scripts/capture.mjs "src/videos/$FOLDER/capture.json" "public/captures/$FOLDER"
+  hand_back "public/captures/$FOLDER"
   echo "Done: public/captures/$FOLDER/"
   exit 0
 fi
@@ -147,6 +156,7 @@ if [ "$VIDEO" = "site" ]; then
   FOLDER="${3:?give a folder name for what is read, e.g. launch}"
   echo "Reading $URL (colours, fonts, logo, wording, screenshots)..."
   PUBLIC_MODE=rw ENTRYPOINT=node remotion scripts/site.mjs "$URL" "public/site/$FOLDER" "${@:4}"
+  hand_back "public/site/$FOLDER"
   echo "Done: public/site/$FOLDER/"
   exit 0
 fi
@@ -158,6 +168,7 @@ if [ "${2:-}" = "still" ]; then
   for frame in "$@"; do
     remotion still out/bundle "$VIDEO" "out/$SLUG-frame-$frame.png" --frame="$frame" --log=error
   done
+  hand_back out
   rm -rf out/bundle
   exit 0
 fi
@@ -167,6 +178,7 @@ fi
 remotion render out/bundle "$VIDEO" "out/$SLUG-4k.mp4" --scale=2
 remotion render out/bundle "$VIDEO" "out/$SLUG-1080p.mp4"
 remotion still out/bundle "$VIDEO" "out/$SLUG-poster.png" --frame=0 --scale=2
-rm -rf out/bundle
 ENTRYPOINT=node remotion scripts/finish.mjs "$SLUG"
+hand_back out
+rm -rf out/bundle
 echo "Done: out/$SLUG-4k.mp4, out/$SLUG-1080p.mp4, out/$SLUG-poster.png, out/$SLUG-thumbnail.jpg"
