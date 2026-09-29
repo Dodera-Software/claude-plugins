@@ -53,14 +53,18 @@ loaded for that session only.
    grow out of each other instead of fading, every line stays up long enough to read, and clicks,
    pops and whooshes land on the frame they belong to.
 5. **Check and render:** Claude looks at stills of every scene and transition, renders 4K and
-   1080p, and scans every frame for glitches before handing it over.
+   1080p, and scans every frame for glitches before handing it over. Every video opens on a
+   cover (logo, name, promise), so Slack, LinkedIn and X show a real preview; you also get a poster
+   and a YouTube-ready 1280×720 thumbnail.
 
 Give it notes like a director ("too fast here", "make the logo land harder") and it re-renders.
 
 ## Needs
 
 - Node 20+ and Docker Desktop. Rendering runs in a container, so no browser is installed on your
-  machine; the render script starts Docker when needed and stops it afterwards.
+  machine; the render script starts Docker when needed and stops it afterwards. The render image is
+  about 1.9 GB, shared by every project on the same kit version; `./render.sh clean` in a `video/`
+  folder removes older ones.
 
 ## Try the example
 

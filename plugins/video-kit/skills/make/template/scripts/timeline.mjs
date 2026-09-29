@@ -16,7 +16,7 @@ await build({
 })
 const { VIDEOS } = await import(pathToFileURL(outfile).href)
 for (const video of VIDEOS) {
-  const { starts, frames, enters } = video.timeline
+  const { starts, frames, enters, cover } = video.timeline
   console.log(`${video.id}: ${video.durationInFrames} frames (${(video.durationInFrames / video.fps).toFixed(1)} s)`)
-  starts.forEach((start, index) => console.log(`  scene ${index}  start ${String(start).padStart(5)}  frames ${String(frames[index]).padStart(4)}  enters over ${enters[index]}`))
+  starts.forEach((start, index) => console.log(`  ${cover && index === 0 ? 'cover  ' : `scene ${cover ? index - 1 : index}`}  start ${String(start).padStart(5)}  frames ${String(frames[index]).padStart(4)}  enters over ${enters[index]}`))
 }

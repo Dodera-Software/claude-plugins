@@ -1,8 +1,11 @@
-// Runs inside the render image after a render (render.sh calls it): compares every frame with the
-// one before it and flags single-frame spikes (3× their neighbours), which read as a flash or a pop.
-// Usage: node scripts/finish.mjs video.mp4
+// Runs inside the render image after a render (render.sh calls it):
+//   1. previews: a 1280×720 JPEG thumbnail (what YouTube asks for) from the poster, and the same
+//      image embedded in both MP4s as cover art, for players and file browsers that show it;
+//   2. glitch scan: compares every frame with the one before it and flags single-frame spikes
+//      (3× their neighbours), which read as a flash or a pop.
+// Usage: node scripts/finish.mjs <slug>   (reads out/<slug>-4k.mp4, -1080p.mp4 and -poster.png)
 import { spawnSync } from 'node:child_process'
-import { readFileSync, rmSync } from 'node:fs'
+import { readFileSync, renameSync, rmSync } from 'node:fs'
 
 const FPS = 60
 
@@ -37,4 +40,17 @@ function scan(file) {
     : `${file}: no single-frame pops`)
 }
 
-scan(process.argv[2])
+function previews(slug) {
+  const thumbnail = `out/${slug}-thumbnail.jpg`
+  ffmpeg(['-y', '-i', `out/${slug}-poster.png`, '-vf', 'scale=1280:720', '-q:v', '3', thumbnail])
+  for (const video of [`out/${slug}-4k.mp4`, `out/${slug}-1080p.mp4`]) {
+    const temp = video.replace(/\.mp4$/, '.cover.mp4')
+    ffmpeg(['-y', '-i', video, '-i', thumbnail, '-map', '0', '-map', '1', '-c', 'copy', '-disposition:v:1', 'attached_pic', '-movflags', '+faststart', temp])
+    renameSync(temp, video)
+  }
+  console.log(`${thumbnail}: preview written and embedded in both videos`)
+}
+
+const slug = process.argv[2]
+previews(slug)
+scan(`out/${slug}-1080p.mp4`)

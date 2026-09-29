@@ -9,6 +9,8 @@ import { END, HOOK, INTRO, PROMISES } from './content'
 export const acmeTeaser = defineVideo({
   id: 'AcmeTeaser',
   brand: acme,
+  // The first frame, and so the preview Slack, LinkedIn and X show.
+  cover: { title: 'Every task has an owner.' },
   scenes: [
     { component: () => <ChatPileUp {...HOOK} />, frames: chatPileUpFrames(HOOK) },
     // The accent bursts out of "familiar?".

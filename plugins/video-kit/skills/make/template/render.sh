@@ -3,9 +3,10 @@
 # it has to and stops it again afterwards, so nothing is left running.
 #
 #   ./render.sh                          list the videos
-#   ./render.sh AcmeTeaser               → out/acme-teaser-4k.mp4, -1080p.mp4, -poster.png
+#   ./render.sh AcmeTeaser               → out/acme-teaser-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg
 #   ./render.sh AcmeTeaser still 120 900 single frames, to check a layout
 #   ./render.sh sheet ~/Downloads/reference.mp4  2 frames a second on contact sheets, to study a video
+#   ./render.sh clean                    remove render images other than this one (others rebuild once)
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -19,8 +20,9 @@ if [ -z "$VIDEO" ]; then
 fi
 SLUG="$(echo "$VIDEO" | sed -E 's/([a-z0-9])([A-Z])/\1-\2/g' | tr '[:upper:]' '[:lower:]')"
 
-
-IMAGE="video-kit:$(shasum package-lock.json Dockerfile | shasum | cut -c1-12)"
+# Named after what goes into it, so projects on the same kit share one image. The lockfile is left
+# out on purpose: `npm install` rewrites it without changing anything the image needs.
+IMAGE="video-kit:$(shasum package.json Dockerfile | shasum | cut -c1-12)"
 STARTED_DOCKER=0
 DOCKER_APP="/Applications/Docker.app/Contents/MacOS/Docker"
 
@@ -32,8 +34,9 @@ stop_docker() {
   sleep 5
   # Whatever ignored "quit": the app, its backend and build processes, and the agent helper it
   # leaves behind on every start.
-  pkill -f "/Applications/Docker.app/Contents/MacOS/"
-  pkill -f "Docker.app/Contents/Resources/cli-plugins/docker-agent serve api"
+  # pkill fails when nothing is left to stop; under set -e that would end the script with an error.
+  pkill -f "/Applications/Docker.app/Contents/MacOS/" || true
+  pkill -f "Docker.app/Contents/Resources/cli-plugins/docker-agent serve api" || true
   return 0
 }
 trap stop_docker EXIT
@@ -67,6 +70,15 @@ if ! docker_answers; then
     launch_docker
     docker_ready 150 || { echo "Docker did not start"; exit 1; }
   fi
+fi
+
+if [ "$VIDEO" = "clean" ]; then
+  # Every render image except this project's current one, plus layers left untagged by rebuilds.
+  OLD="$(docker images --format '{{.Repository}}:{{.Tag}}' | grep '^video-kit:' | grep -v "^$IMAGE$" || true)"
+  [ -n "$OLD" ] && echo "$OLD" | xargs docker rmi >/dev/null
+  docker image prune -f >/dev/null
+  echo "Removed: ${OLD:-nothing}" | tr '\n' ' '; echo
+  exit 0
 fi
 
 docker image inspect "$IMAGE" >/dev/null 2>&1 || docker build -t "$IMAGE" .
@@ -111,7 +123,7 @@ fi
 # screens, and 1080p for social posts, where platforms re-encode anyway.
 remotion render out/bundle "$VIDEO" "out/$SLUG-4k.mp4" --scale=2
 remotion render out/bundle "$VIDEO" "out/$SLUG-1080p.mp4"
-remotion still out/bundle "$VIDEO" "out/$SLUG-poster.png" --frame=-1 --scale=2
+remotion still out/bundle "$VIDEO" "out/$SLUG-poster.png" --frame=0 --scale=2
 rm -rf out/bundle
-ENTRYPOINT=node remotion scripts/finish.mjs "out/$SLUG-1080p.mp4"
-echo "Done: out/$SLUG-4k.mp4, out/$SLUG-1080p.mp4, out/$SLUG-poster.png"
+ENTRYPOINT=node remotion scripts/finish.mjs "$SLUG"
+echo "Done: out/$SLUG-4k.mp4, out/$SLUG-1080p.mp4, out/$SLUG-poster.png, out/$SLUG-thumbnail.jpg"

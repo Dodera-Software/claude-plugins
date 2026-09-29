@@ -7,11 +7,12 @@ React components rendered frame by frame with Remotion. Ask Claude Code for a ne
 ```bash
 npm install
 ./render.sh                          # list the videos
-./render.sh <VideoId>                # → out/<video>-4k.mp4, -1080p.mp4, -poster.png, plus a glitch scan
+./render.sh <VideoId>                # → out/<video>-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg + glitch scan
 ./render.sh <VideoId> still 120 900  # single frames, to check a layout
 ./render.sh sheet reference.mp4      # contact sheets of a video you want to learn from
 npm run timeline                     # where each scene starts
 npm run studio                       # live preview with a timeline
+./render.sh clean                    # remove old render images (about 1.9 GB each)
 ```
 
 Rendering runs in Docker (no browser on your machine); the script starts Docker if needed and

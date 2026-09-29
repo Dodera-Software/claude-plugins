@@ -99,11 +99,15 @@ the brief's key claims and wait for a yes or changes. A table is far cheaper to 
 ## 5. Build
 
 - `video/src/videos/<slug>/`: `content.ts` holds every word; `index.tsx` calls
-  `defineVideo({ id, brand, format, scenes })`; the product's own scenes and UI mockups go in
+  `defineVideo({ id, brand, format, cover: { title }, scenes })`; the product's own scenes and UI mockups go in
   `scenes/` and `components/`. Register it in `video/src/videos/index.ts`.
 - Kit scenes and components first (references/scenes.md). Scenes that show the product follow the
   patterns in references/product-scenes.md: its real screens rebuilt in React from the brand's
   tokens, never a screenshot, so they stay sharp at 4K and can move.
+- The cover: every video opens on a composed frame (logo, name and `cover.title`, the video's
+  promise in a few words), because Slack, LinkedIn, X, WhatsApp and Finder show a video's first
+  frame as its preview; a blank first frame looks like a broken upload. The first scene bursts out
+  of it. Turn it off only if the first scene is fully composed at its own frame 0.
 - Transitions: every scene after the first says how it arrives (`enter: grow(…)`, `flood(…)`,
   `push(…)`), growing out of something visible in the previous scene. Crossfade only when nothing
   can.
@@ -125,10 +129,12 @@ complaint viewers actually make.
 
 ## 7. Render and hand over
 
-`./render.sh <VideoId>` writes `out/<slug>-4k.mp4`, `out/<slug>-1080p.mp4` and a poster, then scans
+`./render.sh <VideoId>` writes `out/<slug>-4k.mp4`, `out/<slug>-1080p.mp4`, a 4K poster and a
+1280×720 `thumbnail.jpg` (both the cover), embeds the cover in the MP4s as cover art, then scans
 every frame for single-frame pops. Look at every pop it lists (a `still` of that frame and its
 neighbours) and fix the cause. Open the 4K file for the person, and tell them its length, where the
-files are, and anything you assumed.
+files are, and anything you assumed. For YouTube, the thumbnail file is the one to upload as the
+custom thumbnail. If they render often, `./render.sh clean` removes old render images.
 
 ## Never
 

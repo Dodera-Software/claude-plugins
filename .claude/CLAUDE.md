@@ -84,6 +84,9 @@ that the storyboard comes before any code, and that the render finishes.
 
 ### Hard-won rules
 
+- **Frame 0 is the preview.** Slack, LinkedIn, X, WhatsApp and Finder show a video's first frame;
+  a video that fades in from an empty canvas looks like a blank upload. `defineVideo` prepends the
+  `Cover` scene (logo, name, title), and the poster and thumbnail are taken from frame 0.
 - **Readability beats pace.** The complaint on every early cut was "too fast to read". A line stays
   up `readingFrames(text)` from its first word (3.5 words/s + 0.8 s).
 - **Scenes are transparent.** The canvas colour sits under the whole video. Anything that layers a
@@ -97,7 +100,10 @@ that the storyboard comes before any code, and that the render finishes.
 - **Docker Desktop on macOS** can hang while starting, ignore "quit", and leave a half-built image
   with empty files if it's stopped mid-build. `render.sh` handles all three (timed `docker ps`
   checks via perl `alarm`, one restart, force-stop, and a rebuild when `package.json` in the image
-  is empty). Keep those guards.
+  is empty). Keep those guards. Anything in the exit trap must not fail (`pkill … || true`): under
+  `set -e` a `pkill` that finds nothing ends a successful render with exit code 1.
+- **One render image per kit version.** Its tag hashes `package.json` and the `Dockerfile`, not the
+  lockfile, which `npm install` rewrites; `./render.sh clean` removes the rest.
 - **Audio** must be redistributable (CC0) and listed in `public/audio/LICENSES.md`. No music: the
   skill asks "sound effects or silent?" and `defineVideo({ sound: false })` mutes every cue.
 - **Remotion** needs a company licence for companies over three people; the READMEs say so.

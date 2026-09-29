@@ -20,6 +20,7 @@ The reference is an Apple keynote film: content first, restraint, one idea at a 
   only on floating things. One accent colour.
 - Type does the work: headlines 56–104 px, body in UI mockups 20–24 px, nothing under 15 px at 1080p.
   Headlines at most ~10 words and 2 lines; a third line means shorten or narrow the copy.
+- Frame 0 is the thumbnail: it's the cover (logo, name, promise), never an empty canvas.
 - Vary the layout: text left with a card right, text on top with windows below, full-screen app,
   a list. Not everything centred.
 - Motion: words rise into focus, cards ease in, the camera pushes toward what matters, springs

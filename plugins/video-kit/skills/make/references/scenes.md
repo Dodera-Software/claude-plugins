@@ -11,6 +11,11 @@ const hook: ChatPileUpProps = { messages, punchline: ['Sound', 'familiar?'] }
 scenes: [{ component: () => <ChatPileUp {...hook} />, frames: chatPileUpFrames(hook) }]
 ```
 
+Every video starts with `Cover` automatically (`defineVideo({ cover: { title } })`): logo, name and a
+title line, fully visible at frame 0 because apps use the first frame as the video's preview. It
+holds ¾ s, then the first scene enters (by default a flood from the centre). `npm run timeline`
+lists it as `cover`.
+
 | Scene | Use it for | Props |
 | --- | --- | --- |
 | `ChatPileUp` | The hook: a team chat piling up with the problem, then a big line naming it | `messages: { person, text }[]` (4–5, last one is the joke), `punchline: string[]` |
