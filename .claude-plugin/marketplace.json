@@ -1,4 +1,5 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "dodera",
   "description": "Claude Code plugins by Dodera Software",
   "owner": {
@@ -8,25 +9,13 @@
   "plugins": [
     {
       "name": "video-kit",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/Dodera-Software/video-kit.git"
-      },
       "description": "Make launch videos, feature teasers and social clips for your product, from your codebase: /video-kit:make. Rendered from code with Remotion.",
       "author": {
         "name": "Dodera Software"
       },
-      "homepage": "https://github.com/Dodera-Software/video-kit",
-      "repository": "https://github.com/Dodera-Software/video-kit",
-      "license": "MIT",
+      "source": "./plugins/video-kit",
       "category": "design",
-      "keywords": [
-        "video",
-        "remotion",
-        "launch video",
-        "motion design",
-        "marketing"
-      ]
+      "homepage": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/video-kit"
     }
   ]
 }
