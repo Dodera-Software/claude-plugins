@@ -22,6 +22,10 @@ Or add the marketplace and install in one step (Claude Code v2.1.275+):
 Choose **Install for you** to have a plugin in every project on your computer, in the terminal,
 VS Code and the desktop app.
 
+To get new versions automatically, turn on auto-update once: `/plugin` → **Marketplaces** →
+**dodera** → **Enable auto-update**. What changed in each version:
+[releases](https://github.com/Dodera-Software/claude-plugins/releases).
+
 ## Layout
 
 ```

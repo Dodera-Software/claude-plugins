@@ -49,7 +49,11 @@ Confirm adding the marketplace, then choose **Install for you** to have it in ev
 terminal, VS Code and the desktop app. On Claude Code older than v2.1.275, run
 `/plugin marketplace add Dodera-Software/claude-plugins` first, then `/plugin install video-kit@dodera`.
 
-**Update:** `/plugin` → Installed → video-kit → Update now.
+**Stay up to date:** turn on automatic updates once: type `/plugin`, open **Marketplaces**, choose
+**dodera**, then **Enable auto-update**. New versions then install by themselves; Claude Code tells
+you when one arrives. Without it, the plugin mentions a newer version when you use it, and you
+update from `/plugin` → Installed → video-kit → Update now. What's new in each version:
+[releases](https://github.com/Dodera-Software/claude-plugins/releases).
 
 **You'll need** [Node.js](https://nodejs.org) (the LTS version) and
 [Docker Desktop](https://www.docker.com/products/docker-desktop) installed on your computer. Claude

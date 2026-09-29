@@ -32,6 +32,21 @@ for their product. So:
   they need to do.
 - A developer may use it too; if they talk technically, match them.
 
+## 0. Newer version? (a few seconds, then move on)
+
+Compare the installed version with the latest published one:
+
+```bash
+grep '"version"' "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json"
+curl -fsS --max-time 5 https://raw.githubusercontent.com/Dodera-Software/claude-plugins/main/plugins/video-kit/.claude-plugin/plugin.json | grep '"version"'
+```
+
+If the published one is newer, tell the person in one plain sentence and carry on with what's
+installed: "A newer version of video-kit is available (X.Y.Z; what's new:
+https://github.com/Dodera-Software/claude-plugins/releases/tag/video-kit-vX.Y.Z). To get it:
+type /plugin, open Installed, choose video-kit and Update now. I'll continue with this version."
+Say nothing if it's up to date, and skip it silently if the check fails (offline). Never block on it.
+
 ## 1. The brief
 
 Ask with the multiple-choice question tool (AskUserQuestion) so the person clicks instead of types;

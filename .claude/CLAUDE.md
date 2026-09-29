@@ -86,7 +86,13 @@ that the storyboard comes before any code, and that the render finishes.
 2. `claude plugin validate .` and `claude plugin validate plugins/video-kit`. If the description
    changed, update the plugin's entry in `.claude-plugin/marketplace.json` too: users see that
    entry in `/plugin` before they install.
-3. Commit and push to `main`. Users get it with `/plugin` → Installed → Update now, or
+3. Commit and push to `main`.
+4. Publish a GitHub release tagged `video-kit-v<version>`, with notes in plain words for
+   non-technical users (what they can now do, what got better; no internals):
+   `gh release create video-kit-v<version> --title "video-kit <version>" --notes-file …`.
+   The skills' update notice links to it, and people watching the repo get it by email.
+5. Users with auto-update on get it by themselves; everyone else sees the skills' "newer version"
+   notice and updates with `/plugin` → Installed → Update now, or
    `claude plugin update video-kit@dodera`. Kit changes don't reach `video/` folders already copied
    into products; they re-copy `template/src/kit` to upgrade.
 
