@@ -21,6 +21,11 @@ export interface FlythroughStop {
   caption: string
   detail?: string
   accent?: string[]
+  /**
+   * Frames the visual needs, counted from when the camera sets off toward it: a recording's
+   * `recordingFrames(length)`, so it plays out before the camera moves on.
+   */
+  hold?: number
 }
 
 export interface FlythroughProps {
@@ -42,7 +47,7 @@ function schedule({ stops }: FlythroughProps) {
     const depart = index === 0 ? 0 : at - TRAVEL
     const arrive = at
     const caption = arrive - SETTLE
-    const hold = readingFrames(`${stop.caption} ${stop.detail ?? ''}`) + 20
+    const hold = Math.max(readingFrames(`${stop.caption} ${stop.detail ?? ''}`) + 20, (stop.hold ?? 0) - (caption - depart) - LEAVE)
     const leave = caption + hold + LEAVE
     at = leave + TRAVEL
     return { depart, arrive, caption, leave }

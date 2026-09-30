@@ -1,7 +1,8 @@
-import { Img, interpolate, staticFile, useCurrentFrame, useVideoConfig } from 'remotion'
+import { Img, interpolate, Sequence, staticFile, useCurrentFrame, useVideoConfig } from 'remotion'
 import { easeInOut, progress } from '../motion'
 import { BrowserFrame } from './BrowserFrame'
 import { Cursor } from './Cursor'
+import { Recording } from './Recording'
 
 export interface CameraKey {
   /** Frame (inside the scene) the camera arrives at this framing. */
@@ -13,8 +14,12 @@ export interface CameraKey {
 }
 
 export interface CapturedScreenProps {
-  /** Screenshots under public/, in order; each shows from its `at` frame on (the first from 0). */
-  shots: { src: string, at?: number }[]
+  /**
+   * Screenshots and recordings under public/, in order; each shows from its `at` frame on (the
+   * first from 0). A recording (.mp4) starts playing at its `at`; `from`, `rate` and `length` are
+   * as in `Recording` (give `length` so its last frame holds). Recordings bring their own pointer.
+   */
+  shots: { src: string, at?: number, from?: number, rate?: number, length?: number }[]
   /** The captured viewport, in CSS pixels (the plan's viewport). */
   viewport?: { width: number, height: number }
   /** Width of the window on screen, in video pixels. Defaults to the frame's width less a margin. */
@@ -76,9 +81,14 @@ export function CapturedScreen({ shots, viewport = { width: 1440, height: 900 },
             const next = shots[index + 1]
             const shown = index === 0 ? 1 : progress(frame, shot.at ?? 0, SWITCH)
             const hidden = next ? progress(frame, (next.at ?? 0) + SWITCH, 1) : 0
-            return (
-              <Img key={shot.src} src={staticFile(shot.src)} style={{ position: 'absolute', inset: 0, width, height, opacity: shown * (1 - hidden) }} />
-            )
+            const style = { position: 'absolute', inset: 0, width, height, opacity: shown * (1 - hidden) } as const
+            return /\.(mp4|webm|mov)$/i.test(shot.src)
+              ? (
+                  <Sequence key={`${shot.src}-${index}`} from={shot.at ?? 0} layout="none">
+                    <div style={style}><Recording src={shot.src} from={shot.from} rate={shot.rate} length={shot.length} /></div>
+                  </Sequence>
+                )
+              : <Img key={`${shot.src}-${index}`} src={staticFile(shot.src)} style={style} />
           })}
           {cursor && <Cursor from={at(cursor.from)} to={at(cursor.to)} moveStart={cursor.moveStart} moveDuration={cursor.moveDuration} clickAt={cursor.clickAt} />}
         </div>

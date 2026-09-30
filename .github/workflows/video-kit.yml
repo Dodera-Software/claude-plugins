@@ -25,6 +25,27 @@ jobs:
       - run: claude plugin validate .
       - run: claude plugin validate plugins/video-kit
 
+  # GitHub's Windows machines can't run the Linux render image, so this checks what can be checked
+  # there: the kit installs, type-checks, and render.sh runs in Git Bash as it does for users.
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: plugins/video-kit/skills/make/template
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: plugins/video-kit/skills/make/template/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - run: npm run timeline
+      - name: render.sh lists the videos
+        run: ./render.sh | grep AcmeTeaser-en
+
   kit:
     runs-on: ubuntu-latest
     timeout-minutes: 40

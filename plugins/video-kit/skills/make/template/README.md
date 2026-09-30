@@ -14,12 +14,15 @@ npm run timeline                     # where each scene starts
 npm run studio                       # live preview with a timeline
 ./render.sh setup                    # get the render image ready (first time only: about 3 GB, 5–10 minutes)
 ./render.sh clean                    # remove old render images (also done after every new build)
-./render.sh capture <folder>         # real screenshots of the running app, from src/videos/<folder>/capture.json
+./render.sh capture <folder>         # screenshots and recordings of the running app, from src/videos/<folder>/capture.json
+./render.sh clip <file> <name>       # a screen recording you made → public/recordings/<name>.mp4
 ./render.sh site <url> <folder>      # colours, fonts, logo, wording and screenshots of a public website
+./render.sh show out/<video>-4k.mp4  # open a finished video and show it in its folder
 ```
 
-Rendering runs in Docker (no browser on your machine); the script starts Docker if needed and
-stops it afterwards.
+Rendering runs in Docker (no browser on your machine), the same on macOS, Windows (Git Bash) and
+Linux; `render.sh` hands every command to `scripts/render.mjs`. It starts Docker Desktop if it isn't
+running and leaves it open.
 
 - `src/kit/`: shared motion, components, scenes, transitions and sounds. Update it by copying a
   newer `template/src/kit` from the plugin.

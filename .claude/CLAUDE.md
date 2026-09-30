@@ -41,8 +41,10 @@ skills/make/template/             the studio copied into a product repo as video
   src/kit/three/                  depth: cameraAt, Space/Place (DOM in 3D), Stage3D/Logo3D (three.js)
   src/brands/acme/                example brand (tokens, logo, Brand object)
   src/videos/acme-teaser/         example video built only from kit scenes
-  render.sh                       every render goes through this (Docker)
-  scripts/                        finish.mjs (previews, glitch scan), timeline.mjs, capture.mjs (real screenshots), sfx-peaks.py
+  render.sh                       every render goes through this: hands the command to scripts/render.mjs
+  scripts/                        render.mjs (Docker, on macOS, Windows and Linux), finish.mjs (previews, glitch scan),
+                                  timeline.mjs, capture.mjs (screenshots and recordings), clip.mjs (people's own
+                                  recordings), site.mjs, sfx-peaks.py
   fonts.conf                      makes Inter answer for system fonts in captures
   public/audio/sfx/               CC0 sounds (Kenney) + LICENSES.md
 ```
@@ -134,12 +136,46 @@ bundled ffmpeg (it has no `fps` filter; use `-r`):
 - **`grow` keeps the source element's colour** and shows the next scene only as it opens; otherwise
   it covers the element instantly and looks like a blank frame.
 - **Take transition geometry from stills** of the outgoing scene's last frames, after any camera move.
-- **Docker Desktop on macOS** can hang while starting, ignore "quit", and leave a half-built image
-  with empty files if it's stopped mid-build. `render.sh` handles all three (timed `docker ps`
-  checks via perl `alarm`, one restart, force-stop, and a rebuild when `package.json` in the image
-  is empty). Keep those guards. Anything in the exit trap must not fail (`pkill … || true`): under
-  `set -e` a `pkill` that finds nothing ends a successful render with exit code 1.
-- **One render image per kit version.** Its tag hashes `package.json` and the `Dockerfile`, not the
+- **Docker Desktop** can hang while starting, ignore "quit", and leave a half-built image with
+  empty files if it's stopped mid-build. `scripts/render.mjs` handles all three (every `docker ps`
+  check times out after 5 s, one restart, force-stop, and a rebuild when `package.json` in the image
+  is empty). Keep those guards.
+- **Never close Docker Desktop.** The script starts it when it isn't running and leaves it open;
+  people use it for other things. Its own containers run with `--rm`, so nothing of the video's is
+  left behind. The only quit is the restart of a Docker stuck while starting. The same when testing
+  by hand: stop what you started (dev servers, containers), never Docker Desktop.
+- **One script for every system.** `render.sh` only sets `MSYS_NO_PATHCONV` (Git Bash on Windows
+  would otherwise rewrite arguments like `/pricing` into Windows paths) and runs
+  `scripts/render.mjs`; everything else is Node, so it behaves the same on macOS, Windows and Linux.
+  `.gitattributes` keeps LF endings, since a carriage return breaks `render.sh` in Git Bash, and the
+  image name hashes files with line endings evened out.
+- **Recordings are filmed frame by frame, and exactly.** `capture.mjs` opens the tab with
+  begin-frame control (`--enable-begin-frame-control`, `Target.createTarget({ enableBeginFrameControl })`):
+  Chrome draws only when asked. A pump asks every 16 ms while nothing is filmed; while filming, each
+  frame moves the page's clock (`Emulation.setVirtualTimePolicy`) and the compositor's (the
+  `frameTimeTicks` of `HeadlessExperimental.beginFrame`) on exactly 1/60 s, and the frame's
+  screenshot comes back with it. Both clocks are needed: with only the page's, CSS transitions and
+  animations run on real time and play several times too fast. Input (mouse, keys) is handled with
+  the next frame, so it's sent, the frame drawn, then awaited (`act`); awaiting first deadlocks.
+  The pump must be stopped before the browser closes, or the capture never exits.
+- **3D at 4K is memory-hungry.** Every WebGL frame at `--scale=2` is 3840×2160 drawn in software,
+  once per tab; a tab per core ran an 8 GB Docker out of memory ("Target closed") in a 3D-heavy
+  scene. `render.mjs` retries a failed render pass once with `--concurrency=2`, and
+  `VIDEO_CONCURRENCY` sets it from the start.
+- **2× is a real 2× screen**, `--force-device-scale-factor=2` with `--window-size`, never puppeteer's
+  emulated `deviceScaleFactor`: with emulation, Chrome's own hover checks (after a screenshot, a key
+  press, a layout change) look at half the mouse's position, and hover styles blink on whatever is
+  there (a sidebar item). Live filming (`"filming": "live"`, the screencast) stays as a fallback: 1×,
+  30 fps, uneven.
+- **The recorded pointer is drawn into the page**, so it's always in sync with hover states. Its
+  press shrinks only the arrow, around its tip: scaling the element that carries its position pulls
+  it toward the screen's corner for the length of the press.
+- **Apps on localhost are reached as localhost.** `capture.mjs` passes localhost ports inside the
+  container through to the computer (dev servers like Vite refuse the host name
+  `host.docker.internal`), and `scripts/bridge.mjs`, started by `render.mjs` for the capture,
+  passes 127.0.0.1 through to `::1` for servers that listen only on IPv6 (Vite on recent Node),
+  which Docker can't reach.
+- **One render image per kit version.** Its name hashes `package.json` and the `Dockerfile`, not the
   lockfile, which `npm install` rewrites (plus `fonts.conf`, which goes into it); `./render.sh clean`
   removes the rest.
 - **3D is a function of the frame.** Camera, positions and rotations come from `useCurrentFrame()`

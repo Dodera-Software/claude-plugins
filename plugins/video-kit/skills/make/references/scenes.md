@@ -35,7 +35,7 @@ lists it as `cover`.
 | `Terminal` | Commands typing themselves, output following: developer tools and CLIs | `lines: { command?, output?, tone?: 'ok' \| 'muted' \| 'error' \| 'accent' }[]`, `title?`, `caption?` |
 | `PromiseList` | Claims building one under another | `items: { icon: LucideIcon, text }[]` (3–5, first is the headline). `promiseListLeadIcon(props, format, look)` gives the headline icon's box, for `grow` into the next scene |
 | `EndCard` | Logo, name, tagline, "Works with" icons, the address | `tagline`, `taglineAccent?`, `worksWith?: ToolKind[]`, `cta?` |
-| `Flythrough` | The film form: the product's screens hang in space, the camera flies from one to the next and settles while its line appears below (3d.md) | `stops: { image? \| visual?, caption, detail?, accent? }[]` (2–5), `viewport?` |
+| `Flythrough` | The film form: the product's screens hang in space, the camera flies from one to the next and settles while its line appears below (3d.md) | `stops: { image? \| visual?, caption, detail?, accent?, hold? }[]` (2–5), `viewport?` |
 | `LogoReveal` | The logo as a solid object, the camera gliding round to face it, name and tagline beneath (3d.md) | `tagline?`, `taglineAccent?` |
 
 ## Kit components
@@ -55,7 +55,8 @@ lists it as `cover`.
 | `PersonAvatar` | Initials in a tinted circle (`Person`: initials, name, tint, ink) |
 | `SnippetCard` | A message, ticket or PR as it looks in its own tool |
 | `SlackThread` | A Slack thread where someone @mentions the product and it answers in place |
-| `CapturedScreen` | Real screenshots (`render.sh capture`) in a browser window: `shots` that switch at frames, `camera` keyframes (zoom toward a point, one move at a time, view kept inside the screenshot), a `cursor` that clicks; see capture.md |
+| `CapturedScreen` | Real screens (`render.sh capture`) in a browser window: `shots` (screenshots, and recordings that play from their `at`) that switch at frames, `camera` keyframes (zoom toward a point, one move at a time, view kept inside the screen), a `cursor` that clicks on screenshots; see capture.md |
+| `Recording` / `recordingFrames()` | A screen recording filling its box, anywhere: a phone screen, a `Flythrough` stop, a `Place`. `src`, `from`, `rate`, `length` (to hold its last frame); see capture.md |
 | `BrowserFrame` | A quiet browser window (dots and address) around anything |
 | `ToolIcon` | Google Meet, Slack, GitHub, Jira, file, Claude |
 | `Sfx` | A sound cue at a frame (see audio.md) |

@@ -1,0 +1,7 @@
+# Shell scripts run in Git Bash on Windows too, where a carriage return breaks them.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gif binary
+*.ogg binary
+*.mp4 binary

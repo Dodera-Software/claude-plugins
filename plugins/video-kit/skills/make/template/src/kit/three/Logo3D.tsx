@@ -1,3 +1,4 @@
+import { formatHex, interpolate } from 'culori'
 import { useEffect, useMemo, useState } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { cancelRender, continueRender, delayRender, staticFile } from 'remotion'
@@ -35,6 +36,19 @@ interface Part {
   solid: boolean
 }
 
+/**
+ * A gradient fill's colour for a solid: the middle of its stops, mixed in oklab. Reads the SVG's own
+ * <linearGradient>/<radialGradient> by id; anything it can't read falls back to the brand accent.
+ */
+function gradientColor(markup: string, id: string, fallback: string): string {
+  const gradient = new RegExp(`<(?:linear|radial)Gradient[^>]*id="${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>([\\s\\S]*?)</(?:linear|radial)Gradient>`).exec(markup)
+  const stops = gradient ? [...gradient[1].matchAll(/stop-color="([^"]+)"/g)].map(match => match[1]) : []
+  if (!stops.length) {
+    return fallback
+  }
+  return formatHex(interpolate(stops, 'oklab')(0.5)) ?? fallback
+}
+
 function flipped(points: Vector2[]): Vector2[] {
   return points.map(point => new Vector2(point.x, -point.y))
 }
@@ -53,7 +67,16 @@ function logoParts(markup: string, size: number, depth: number, fallback: string
   let z = 0
   for (const path of paths) {
     const style = (path.userData?.style ?? {}) as Parameters<typeof SVGLoader.pointsToStroke>[1] & { fill?: string, stroke?: string }
-    const paint = (value: string | undefined) => (!value || value === 'none' ? null : /^(url|currentColor|inherit)/.test(value) ? fallback : value)
+    const paint = (value: string | undefined) => {
+      if (!value || value === 'none') {
+        return null
+      }
+      const gradient = /^url\(\s*#([^)\s]+)\s*\)/.exec(value)
+      if (gradient) {
+        return gradientColor(markup, gradient[1], fallback)
+      }
+      return /^(currentColor|inherit)/.test(value) ? fallback : value
+    }
     const fill = paint(style.fill)
     if (fill) {
       const shapes = SVGLoader.createShapes(path).map(shape => {

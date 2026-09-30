@@ -1,6 +1,5 @@
 import type { TransitionPresentation, TransitionPresentationComponentProps } from '@remotion/transitions'
 import { fade } from '@remotion/transitions/fade'
-import { none } from '@remotion/transitions/none'
 import { pushCut as remotionPushCut } from '@remotion/transitions/push-cut'
 import { slide, type SlideDirection } from '@remotion/transitions/slide'
 import { wipe as remotionWipe, type WipeDirection } from '@remotion/transitions/wipe'
@@ -121,9 +120,17 @@ export function pushCut(frames = 18): SceneTransition {
   return transition(remotionPushCut({ flashOpacity: 0 }), frames)
 }
 
+/**
+ * A transition needs at least one frame in which both scenes are mounted; a cut shows only the
+ * incoming one in it, or that frame would be both scenes on top of each other.
+ */
+function Cut({ children, presentationDirection }: TransitionPresentationComponentProps<Record<string, never>>) {
+  return presentationDirection === 'exiting' ? null : <AbsoluteFill>{children}</AbsoluteFill>
+}
+
 /** No transition at all, on the beat. Technical and bold looks cut; calm ones rarely do. */
 export function cut(): SceneTransition {
-  return transition(none(), 1)
+  return transition({ component: Cut, props: {} }, 1)
 }
 
 /**

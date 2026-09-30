@@ -81,12 +81,15 @@ minutes, not the full investigation) and one more round, with real options:
 | Feature / Story | Which feature? (teaser, clip) or Which story? (launch film) | 3–4 of the product's actual features with a one-line description each, newest or most distinctive first; or 2–3 story angles from the product's own copy |
 | Look | How should it look? | The four looks, the one that fits this product first, marked "(Recommended)": Calm and elegant: lots of space, light type, gentle motion · Bold: your brand colour fills the screen, big type, fast · Technical: dark, a subtle grid, code-style labels · Playful: soft shapes, bouncy motion, a light joke |
 | Language | In which language? (multiple choice allowed) | English (default) · the other languages the product itself ships in (from its translation files) |
-| Screens | How should the product appear? | Recreated from the code (recommended): nothing needs to run · Real screenshots of the running app: I start the product on this computer with example data; needs a demo login |
+| Screens | How should the product appear? | Recreated from the code (recommended): nothing needs to run · The real app, running: screenshots, and short recordings where something moves; I start the product on this computer with example data; needs a demo login · My own screen recordings: you give me recordings you made, and I build around them |
 
 In website mode, Screens offers: Screenshots of your website (recommended) · Real screenshots of the
 product, behind its login: needs a demo account · Simple animated scenes, no screenshots.
 
-If they pick real screenshots, give them the notice in references/capture.md before going on.
+If they pick the real app, give them the notice in references/capture.md before going on; which
+moments are screenshots and which are recordings is yours to decide (capture.md, "Screenshots or
+recordings"). If they bring recordings, ask them to put the files in the project or give their
+paths (capture.md, "Their own recordings").
 
 When they describe scenes or an idea, that is the plan: build what they described, filling in only
 what they left open, and say where you had to adapt it (a claim the product can't back, a scene
@@ -106,20 +109,23 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
 
 - **Claude Code on their computer.** Making a video runs programs on the person's computer. If you
   can't run commands here (the claude.ai chat, the mobile app, Cowork), say so in plain words right
-  after the brief: "Making the video needs Claude Code on your Mac: the Claude desktop app's Code
-  tab, or the terminal. Open it there and ask again." You can still show the plan in words; don't
-  pretend to make the video.
-- **A Mac, or Linux with Docker already running.** Making the video relies on macOS tools to open
-  and close Docker Desktop and show the result. On Windows, say plainly that video-kit works on a
-  Mac (or Linux) for now, and stop there.
+  after the brief: "Making the video needs Claude Code on your computer: the Claude desktop app's
+  Code tab, or the terminal. Open it there and ask again." You can still show the plan in words;
+  don't pretend to make the video.
+- **Mac, Windows or Linux.** On Linux, Docker must already be running (the video app can't start
+  it there); on a Mac or Windows it opens Docker Desktop when needed and leaves it open.
 - **Node.js 20 or newer** (`node --version`) and **Docker Desktop** (`docker --version`, or
-  `/Applications/Docker.app` on a Mac; it doesn't need to be running). If one is missing, stop
+  `/Applications/Docker.app` on a Mac, `C:\Program Files\Docker\Docker\Docker Desktop.exe` on
+  Windows; it doesn't need to be running). If one is missing, stop
   and say so in plain words with the download link (nodejs.org, the LTS version;
-  docker.com/products/docker-desktop), that installing may need an administrator, and that you'll
-  carry on as soon as it's installed. Everything up to the storyboard can go ahead meanwhile.
+  docker.com/products/docker-desktop; on Windows its installer also sets up WSL 2, and may ask to
+  restart the computer), that installing may need an administrator, and that you'll carry on as
+  soon as it's installed. Everything up to the storyboard can go ahead meanwhile.
 - **The studio:** videos live with the product, in a `video/` folder at the project root (another
   name if that's taken), whatever the video is about. If it isn't there, copy the template to it without `node_modules` and
-  `out` (`rsync -a --exclude node_modules --exclude out "<template>/" video/`), run `npm install`
+  `out`, the same way on every system:
+  `node -e "const [f,t]=process.argv.slice(1);require('fs').cpSync(f,t,{recursive:true,filter:p=>!['node_modules','out'].includes(require('path').basename(p))})" "<template>" video`,
+  then `npm install`
   in it, and keep it out of the project's own tooling: add `video/node_modules` and `video/out` to
   `.gitignore`, and exclude `video/` from the linter, type checker, tests and Docker build context
   where they would pick it up. Tell the person in one line that you added a `video` folder to the
@@ -134,7 +140,7 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
   the product's own video exists. If `video/` exists already, add the new video next to the others.
 - **An older studio:** if `video/` came from an earlier version (it lacks files the template has,
   like `src/kit/three/` or `scripts/site.mjs`), bring it up to date first: copy from the template
-  `src/kit/`, `scripts/`, `render.sh`, `Dockerfile`, `fonts.conf`, `package.json`,
+  `src/kit/`, `scripts/`, `render.sh`, `Dockerfile`, `fonts.conf`, `package.json`, `tsconfig.json`,
   `package-lock.json`, `README.md` and `public/audio/`, never `src/videos/`, `src/brands/` or the
   rest of `public/`. Then `npm install` and `npm run typecheck`; if an existing video no longer
   compiles, fix it to the new kit API. Say in one line that you updated the video tools.
@@ -218,9 +224,9 @@ Follow references/pacing.md. Wait for a yes or changes.
 ## 6. Check it, then show it
 
 `npm run timeline` prints where each scene starts. `./render.sh <VideoId> still <frame> …` renders
-single images (the script starts the video app and closes it after). Look at each scene at its
-fullest moment and the middle of every transition. Fix text that overlaps or wraps with one word
-alone, headings over three lines, empty areas, anything cut at the edge, anything off-brand, any
+single images (the script starts Docker Desktop if needed and leaves it open). Look at each scene
+at its fullest moment and the middle of every transition. Fix text that overlaps or wraps with one
+word alone, headings over three lines, empty areas, anything cut at the edge, anything off-brand, any
 claim not in the brief. "Too fast to read" is what viewers complain about; slow is fixable.
 
 Then show the person 3–4 of those images (open them, or point to them), one line each on the moment
@@ -233,8 +239,8 @@ video, minutes.
 1080p videos, a poster and a thumbnail in the video's own shape, and checks every frame for
 glitches; fix any it reports. Then:
 
-- Open the video for them (`open out/<slug>-4k.mp4`; `xdg-open` on Linux) and reveal the folder
-  (`open -R …`).
+- Open the video for them and show it in its folder: `./render.sh show out/<slug>-4k.mp4` (on any
+  system).
 - Tell them in plain words: how long it is, which file is for what (wide: "the 4K one for the
   website and YouTube, the 1080p one for LinkedIn, Slack and email; the thumbnail is the picture
   YouTube asks for"; square and tall: "the 1080p one is what you upload"), and anything you
@@ -249,5 +255,5 @@ glitches; fix any it reports. Then:
   product really has.
 - Put real customer data on screen. Demo data only.
 - Add audio the kit doesn't ship without a licence that allows it in the repo.
-- Leave anything running: `render.sh` closes the video app if it opened it; stop anything else you
-  started (the product's dev server, its containers).
+- Leave anything running that you started for the video (the product's dev server, its containers).
+  Docker Desktop itself stays open: never quit it.

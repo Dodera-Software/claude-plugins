@@ -25,7 +25,8 @@ needed: answer a few questions, approve a plan, and get a finished 4K video.
 
 Claude asks what kind of video (launch film, feature teaser, social clip), where it will be shown,
 sound effects or silent (silent unless you ask), which feature or story, how it should look, which
-languages, and whether to show the product recreated from its code or as real screenshots. Then it
+languages, and whether to show the product recreated from its code, as the real app (screenshots and
+short recordings) or through screen recordings you made. Then it
 reads how your product works, comes up with an idea for this video, shows you the plan and a few
 still images to approve, and makes the video.
 
@@ -98,26 +99,30 @@ update from `/plugin` → Installed → video-kit → Update now. What's new in 
 because making a video runs programs on your computer. In the claude.ai chat, the mobile app and
 Cowork it can plan a video but not make it.
 
-**You'll need** a Mac (or Linux with Docker running; Windows isn't supported yet), with
+**You'll need** a Mac or a Windows PC (or Linux with Docker running), with
 [Node.js](https://nodejs.org) (the LTS version) and
 [Docker Desktop](https://www.docker.com/products/docker-desktop) installed. Claude
 checks for both before starting and tells you if one is missing. After installing Docker Desktop,
-open it once and accept its terms; from then on it doesn't need to be open: Claude opens it while
-making the video and closes it afterwards. Keep about 5 GB of disk space free.
+open it once and accept its terms; from then on it doesn't need to be open: Claude opens it when
+it makes a video and leaves it open. Keep about 5 GB of disk space free.
 
 **Your first video takes 5–10 minutes longer.** The first time on a computer, Claude sets up the
 video app (a one-time download of about 3 GB). It does this in the background while it reads your
 product, and tells you when it starts. After that, a video starts straight away.
 
-## Real screenshots (optional)
+## The real app, and your own recordings (optional)
 
-By default the product is recreated from its code, so nothing needs to run. If you choose real
-screenshots instead:
+By default the product is recreated from its code, so nothing needs to run. If you choose the real
+app instead:
 
 - Claude starts your product on your computer the way developers run it (with its database and
-  example data), takes the screenshots, and closes it again. It reads your project to learn how.
+  example data), takes screenshots, films short recordings of the moments where something moves
+  (typing, a card moving, a list filling up), and closes it again. It reads your project to learn how.
 - If pages need a login, you give it a **demo account**, never a real one.
 - **Everything on screen ends up in the video**, so only example data should be visible.
+
+You can also bring screen recordings you made yourself (on a Mac, Windows or your phone): put them
+in the project or tell Claude where they are, and it builds the video around them.
 
 ## What leaves your computer
 
@@ -129,8 +134,8 @@ screenshots instead:
   plugin's version number from GitHub to tell you about updates.
 - **In website mode** it visits the pages it reads, like a browser would, and downloads a public
   list of cookie notices to hide them.
-- **Real screenshots** run your product on your computer only. The demo login is passed while the
-  screenshots are taken and never written to a file.
+- **Real screenshots and recordings** run your product on your computer only. The demo login is
+  passed while they are taken and never written to a file.
 
 ## If something goes wrong
 
