@@ -1,0 +1,13 @@
+{
+  "name": "video-kit-voice",
+  "private": true,
+  "type": "module",
+  "description": "Records a video's voiceover, offline, with Kokoro (Apache-2.0) voices. Installed apart from the video app by scripts/voice.mjs.",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "kokoro-js": "1.2.1"
+  }
+}

@@ -58,7 +58,9 @@ brought up), leaving anything that was already running alone.
 - `baseUrl`: the app's address as you found it, `http://localhost:5173` or `https://localhost:3300`
   with its path prefix. The capture runs in Docker and passes localhost through to this computer,
   so dev servers that check the host name (Vite, Next, webpack) accept it. An API on another local
-  port goes in `forward: [8000]`. A remote address (a staging server) works as is.
+  port goes in `forward: [8000]`. A remote address (a staging server) works as is. An API on a name
+  only this computer knows (Laravel Herd or Valet `.test` sites, `/etc/hosts` entries) goes in
+  `local: ["growee.test", "*.growee.test"]`; find it in the app's `.env` and config.
 - `viewport`: 1440×900 unless the product is best seen wider or narrower; shots are taken at 2×.
 - `login`: the steps to sign in, reading `$VIDEO_LOGIN_EMAIL` and `$VIDEO_LOGIN_PASSWORD`. Each
   capture is a fresh browser, so set what a new visitor would otherwise see with a `storage` step

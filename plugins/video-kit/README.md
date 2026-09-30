@@ -24,7 +24,7 @@ needed: answer a few questions, approve a plan, and get a finished 4K video.
 ```
 
 Claude asks what kind of video (launch film, feature teaser, social clip), where it will be shown,
-sound effects or silent (silent unless you ask), which feature or story, how it should look, which
+whether it's narrated, has sound effects or is silent (silent unless you ask), which feature or story, how it should look, which
 languages, and whether to show the product recreated from its code, as the real app (screenshots and
 short recordings) or through screen recordings you made. Then it
 reads how your product works, comes up with an idea for this video, shows you the plan and a few
@@ -60,6 +60,15 @@ reads the colours, logo, fonts and wording from there, takes clean screenshots o
 (cookie notices hidden), and makes the video from what the site says. Works from any folder; the
 video goes in a `video` folder there. Use it for your own website, or one whose owner has agreed:
 the logo, wording and screenshots in the video belong to them.
+
+```
+/video-kit:voiceover
+```
+
+**A narrator's voice**, for a video you already made or a new one. Claude writes a line for each
+scene, lets you hear a few voices and pick one, and the video is timed to the voice. The voices
+are free and open and are recorded on your computer: no account, nothing uploaded. English only
+(American and British voices).
 
 ```
 /video-kit:changelog
@@ -130,8 +139,9 @@ in the project or tell Claude where they are, and it builds the video around the
   accounts, no analytics, no uploads. Claude reads your project the same way it does in any Claude
   Code session.
 - **What it downloads:** the video app the first time (from npm and Docker Hub, and the browser it
-  draws with), the fonts from Google Fonts while making the video, and, once per video, the
-  plugin's version number from GitHub to tell you about updates.
+  draws with), the fonts from Google Fonts while making the video, the voices the first time you
+  choose a narrator (about 90 MB, from Hugging Face; shared with pr-podcast), and, once per video,
+  the plugin's version number from GitHub to tell you about updates.
 - **In website mode** it visits the pages it reads, like a browser would, and downloads a public
   list of cookie notices to hide them.
 - **Real screenshots and recordings** run your product on your computer only. The demo login is
@@ -186,6 +196,7 @@ npm run studio                  # or preview it live with a timeline
 
 - This plugin: MIT.
 - Sound effects: CC0 (Kenney, "Interface Sounds"). No music is included.
+- Voices: Kokoro (Apache 2.0), free for commercial videos.
 - **Remotion** has its own licence: free for individuals and companies of up to three people;
   larger companies need a [Remotion company licence](https://www.remotion.pro/license) to render.
 - **Docker Desktop** is free for personal use, education and companies with fewer than 250

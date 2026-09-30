@@ -28,5 +28,9 @@ if (process.argv.includes('--ids')) {
 for (const video of VIDEOS) {
   const { starts, frames, enters, cover } = video.timeline
   console.log(`${video.id}: ${video.durationInFrames} frames (${(video.durationInFrames / video.fps).toFixed(1)} s)`)
-  starts.forEach((start, index) => console.log(`  ${cover && index === 0 ? 'cover  ' : `scene ${cover ? index - 1 : index}`}  start ${String(start).padStart(5)}  frames ${String(frames[index]).padStart(4)}  enters over ${enters[index]}`))
+  const { voice = [] } = video.timeline
+  starts.forEach((start, index) => {
+    const line = voice[index] ? `  voice "${voice[index].line}" ${voice[index].from}–${voice[index].to}` : ''
+    console.log(`  ${cover && index === 0 ? 'cover  ' : `scene ${cover ? index - 1 : index}`}  start ${String(start).padStart(5)}  frames ${String(frames[index]).padStart(4)}  enters over ${enters[index]}${line}`)
+  })
 }

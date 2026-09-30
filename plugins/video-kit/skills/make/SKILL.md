@@ -55,17 +55,19 @@ every question gets an "Other" for their own answer. If that tool isn't availabl
 questions in one short message.
 
 **When the request describes the video** (`$ARGUMENTS` or the message says what it's for): use it,
-and ask only what it leaves open, in a single round. Ask about the look and sound if they weren't
-said, and use any scenes or ideas it describes as the plan.
+and ask only what it leaves open, in a single round. Ask about the style, look and sound if they
+weren't said, and use any scenes or ideas it describes as the plan.
 
-**When it's just the command:** one round of four questions (Format allows more than one answer):
+**When it's just the command:** one round of four questions (Format allows more than one answer).
+Style and Sound are asked every time, so people find out a video can be cinematic and narrated
+without having to know to ask:
 
 | Header | Question | Options (label: description) |
 | --- | --- | --- |
 | Video | What kind of video? | Launch film: 45–75 s, the whole product · Feature teaser: 15–30 s, one feature · Social clip: 10–20 s, one moment, loops |
 | Format | Where will it be shown? (pick all that apply) | Website or YouTube: wide (16:9) · Reels, Shorts or TikTok: tall (9:16) · LinkedIn or X: square |
-| Sound | Sound effects or silent? | Silent (recommended): no sound at all · Sound effects: soft clicks and pops on what happens (never music) |
-| Your ideas | Anything you'd like to see in it? | Surprise me (recommended): I'll come up with the idea · I'll describe it: the scenes or the idea in your own words (they write it in "Other" or in the chat) |
+| Style | What style? | Let me choose (recommended): I pick what suits the product and say why in the plan · Scene by scene: clear chapters, each with its own point · Cinematic, with 3D: one continuous camera journey through your product, 3D moments, words over the picture |
+| Sound | Voice, sound effects, or silent? | Silent (recommended): no sound at all · Narrator voice: a voice tells the story, recorded on this computer with free voices, English only · Sound effects: soft clicks and pops on what happens (never music) |
 
 **No code here** (the folder isn't a software project, or the person says they only have the
 website): this is website mode (references/website.md), the same as `/video-kit:website`. Ask for
@@ -80,7 +82,8 @@ minutes, not the full investigation) and one more round, with real options:
 | --- | --- | --- |
 | Feature / Story | Which feature? (teaser, clip) or Which story? (launch film) | 3–4 of the product's actual features with a one-line description each, newest or most distinctive first; or 2–3 story angles from the product's own copy |
 | Look | How should it look? | The four looks, the one that fits this product first, marked "(Recommended)": Calm and elegant: lots of space, light type, gentle motion · Bold: your brand colour fills the screen, big type, fast · Technical: dark, a subtle grid, code-style labels · Playful: soft shapes, bouncy motion, a light joke |
-| Language | In which language? (multiple choice allowed) | English (default) · the other languages the product itself ships in (from its translation files) |
+| Language | In which language? (multiple choice allowed) | English (default) · the other languages the product itself ships in (from its translation files). Only when it ships more than one; with a narrator, say that the voice is English |
+| Your ideas | Anything you'd like to see in it? | Surprise me (recommended): I'll come up with the idea · I'll describe it: the scenes or the idea in your own words (they write it in "Other" or in the chat). When Language takes the fourth place, ask this in one plain line after the round instead |
 | Screens | How should the product appear? | Recreated from the code (recommended): nothing needs to run · The real app, running: screenshots, and short recordings where something moves; I start the product on this computer with example data; needs a demo login · My own screen recordings: you give me recordings you made, and I build around them |
 
 In website mode, Screens offers: Screenshots of your website (recommended) · Real screenshots of the
@@ -96,8 +99,9 @@ what they left open, and say where you had to adapt it (a claim the product can'
 too long to read).
 
 Don't ask for the rest; decide it and show it in the storyboard, where it's easy to correct: the
-form (chapters, or a film: one continuous camera journey, often in 3D; style.md, "Two forms"; a
-film whenever they ask for something cinematic, 3D, "like a movie" or "not like a presentation"), who
+form, when they left the style to you (chapters, or a film: one continuous camera journey, often
+in 3D; style.md, "Two forms"; a film whenever they ask for something cinematic, 3D, "like a
+movie" or "not like a presentation"), who
 watches it (customers unless said otherwise), the call to action (the product's website), tone
 (from the look: a light joke only in playful; confident and warm otherwise, never salesy, no hype
 words). If they mention a video they'd like to
@@ -180,6 +184,7 @@ look, the signature moment, a varied structure. Then show the plan the way a per
 - **The form**, one line: scene by scene, or one continuous film (and why).
 - One line per scene, in their words ("Opens on a team chat where nobody knows who's doing the
   invoice export; then…"), with its length in seconds and what it shows. Mark the signature moment.
+- With a narrator: under each scene, the line the voice says, in quotes (references/voice.md).
 - The few decisions you made for them (audience, website, sound).
 - "Anything you'd like to change or add? Describe any scene and I'll build it."
 
@@ -218,6 +223,10 @@ Follow references/pacing.md. Wait for a yes or changes.
   can, varied from scene to scene. Crossfade only when nothing else fits.
 - Sound: silent unless they chose sound effects; then `sound: true` and quiet `<Sfx>` cues on things
   that happen (references/audio.md). Never music.
+- Narrator (references/voice.md): once the storyboard is approved, let them hear the first line in
+  two or three voices (`render.sh voice-sample`) and choose; write `voice.json`, record it
+  (`render.sh voice <slug>`), import its manifest as `voiceover`, and give each scene its `voice`
+  line. The voice sets the timing: build after recording, and record again after changing a line.
 - In your own scenes every line stays up for `readingFrames(text)` from its first word.
 - `npm run typecheck` must pass.
 
@@ -231,7 +240,9 @@ claim not in the brief. "Too fast to read" is what viewers complain about; slow 
 
 Then show the person 3–4 of those images (open them, or point to them), one line each on the moment
 they show, and ask "Shall I make the full video?" Their notes now cost seconds; after the full
-video, minutes.
+video, minutes. With a narrator, `npm run timeline` shows when each line is said: check that none
+runs into the next scene's entrance, and ask the person to listen to the voice's pace in the full
+video, which stills can't show.
 
 ## 7. Make the video and hand it over
 

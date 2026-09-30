@@ -1,7 +1,7 @@
 # Audio
 
-The kit ships sound effects only, all CC0 (public domain): Kenney's "Interface Sounds". No music,
-so there's nothing to license. If someone wants a music bed, they add a track they have the rights
+Two kinds of sound: a narrator's voice (references/voice.md) and sound effects, all CC0 (public
+domain): Kenney's "Interface Sounds". No music, so there's nothing to license. If someone wants a music bed, they add a track they have the rights
 to in their editor after the render.
 
 Videos are silent unless the person chose sound effects in the brief. `defineVideo({ sound: true })`

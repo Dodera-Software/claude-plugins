@@ -1,7 +1,7 @@
 {
   "name": "video-kit",
-  "description": "Make launch videos, feature teasers, social clips and what's-new videos for your product, from its code or just its website: /video-kit:make, /video-kit:website and /video-kit:changelog. Built for anyone, no video skills needed.",
-  "version": "0.10.1",
+  "description": "Make launch videos, feature teasers, social clips and what's-new videos for your product, from its code or just its website, scene by scene or cinematic with 3D, silent or narrated: /video-kit:make, /video-kit:website, /video-kit:voiceover and /video-kit:changelog. Built for anyone, no video skills needed.",
+  "version": "0.11.0",
   "author": {
     "name": "Dodera Software"
   },

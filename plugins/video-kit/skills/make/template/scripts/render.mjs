@@ -15,6 +15,9 @@
 //   ./render.sh site <url> <folder> [/page …]  colours, fonts, logo, wording and screenshots of a
 //                                        public website → public/site/<folder>/
 //   ./render.sh show <file>              open a finished video and show it in its folder
+//   ./render.sh voice <folder>           record src/videos/<folder>/voice.json → public/voice/<folder>/
+//   ./render.sh voice-sample "<line>" af_heart am_michael …  the line in each voice → out/voice-samples/
+//                                        (voices run on the computer with Node, no Docker)
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
@@ -268,6 +271,12 @@ if (command === 'show') {
     spawn('xdg-open', [file], { detached: true, stdio: 'ignore' }).unref()
   }
   process.exit(0)
+}
+
+if (command === 'voice' || command === 'voice-sample') {
+  const args = command === 'voice' ? rest : ['--sample', ...rest]
+  const result = spawnSync(process.execPath, [join(HERE, 'scripts', 'voice.mjs'), ...args], { stdio: 'inherit' })
+  process.exit(result.status ?? 1)
 }
 
 const slug = command.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()

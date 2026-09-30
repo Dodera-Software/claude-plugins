@@ -35,7 +35,8 @@ video (`acme`) are made up, and real products' videos live in their own repos.
 skills/make/SKILL.md              the workflow Claude follows: brief (questionnaire), readiness and setup, investigation, storyboard, build, stills, render
 skills/website/SKILL.md           /video-kit:website: asks for the address, then the make workflow in website mode
 skills/changelog/                 /video-kit:changelog (what's-new videos from recent changes) and release-video.yml, a GitHub Action template
-skills/make/references/*.md       details SKILL.md points to: scenes, product-scenes, 3d, style, pacing, audio, brand, recipes, capture, website
+skills/voiceover/SKILL.md         /video-kit:voiceover: a narrator for an existing video, or a new video with one
+skills/make/references/*.md       details SKILL.md points to: scenes, product-scenes, 3d, style, pacing, audio, voice, brand, recipes, capture, website
 skills/make/template/             the studio copied into a product repo as video/
   src/kit/                        shared: motion helpers, brand context, components, scenes, transitions, sound cues, defineVideo
   src/kit/three/                  depth: cameraAt, Space/Place (DOM in 3D), Stage3D/Logo3D (three.js)
@@ -47,6 +48,7 @@ skills/make/template/             the studio copied into a product repo as video
                                   recordings), site.mjs, sfx-peaks.py
   fonts.conf                      makes Inter answer for system fonts in captures
   public/audio/sfx/               CC0 sounds (Kenney) + LICENSES.md
+  voice/                          the voice engine (Kokoro, kokoro-js), installed apart from the video app by scripts/voice.mjs
 ```
 
 ### Working on the kit
@@ -183,6 +185,11 @@ bundled ffmpeg (it has no `fps` filter; use `-r`):
   separately and out of order. `Stage3D` renders brand colours untoned (`flat`) with a low
   environment light: brighter reflections wash a dark brand colour out to pastel. WebGL runs in
   software in the render container with Remotion's default flags; nothing to configure.
+- **The voice runs on the computer, not in Docker**, the way pr-podcast records: `scripts/voice.mjs`
+  installs `voice/` once into `~/.cache/video-kit` (keyed by its package.json) and reuses
+  pr-podcast's downloaded voices when they're there. kokoro-js's voices are English only (28,
+  American and British); the other languages are only in the Python Kokoro. The voice is recorded
+  first and scenes grow to fit their line (`withVoice` in `video.tsx`); effects duck to 40% under it.
 - **Audio** must be redistributable (CC0) and listed in `public/audio/LICENSES.md`. No music: the
   skill asks "sound effects or silent?" and `defineVideo({ sound: false })` mutes every cue.
 - **Remotion** needs a company licence for companies over three people; the READMEs say so.

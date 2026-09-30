@@ -21,7 +21,9 @@
 //
 // The app runs on this computer, the browser in Docker. A localhost address works as is: its port
 // (and any in "forward": [8000, …], for an API on another port) is passed through to the computer,
-// so the app sees the address it expects (dev servers like Vite refuse other host names).
+// so the app sees the address it expects (dev servers like Vite refuse other host names). Names
+// only this computer knows (Herd, Valet, /etc/hosts), like an API at https://demo.growee.test, go in
+// "local": ["growee.test", "*.growee.test"]: the browser sends them to the computer too.
 //
 // Recording: { "record": "add-card" } starts filming, { "stop": true } (or the end of the plan) ends
 // it. In between, the steps play at a pace a viewer can follow: the mouse glides to what it clicks
@@ -32,6 +34,7 @@
 // <id>.mp4 and <id>.json: its length, size and when each step happened (t, in seconds), for placing
 // camera moves on the moments that matter.
 import { spawnSync } from 'node:child_process'
+import { lookup } from 'node:dns/promises'
 import { createServer, connect } from 'node:net'
 import { mkdtempSync, readFileSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -133,8 +136,36 @@ function pump(client) {
   }
 }
 
-/** The tab's frame pump, set up when the browser starts. */
+/** The tab being worked in, and its frame pump. */
+let tab = null
 let drawing = null
+let browser = null
+
+/**
+ * A new tab whose frames are drawn on request (begin-frame control), with a pump that asks for one
+ * every 16 ms while nothing is filmed, so pages load and render as usual; the old tab, if any,
+ * closes. A filmed tab can't go back to real time (its clock only fast-forwards or pauses from
+ * then on), so every recording ends in a fresh tab at the same address: same login, same storage.
+ */
+async function openTab(url) {
+  const old = tab
+  await drawing?.stop()
+  const browserClient = await browser.target().createCDPSession()
+  const { targetId } = await browserClient.send('Target.createTarget', {
+    url: 'about:blank', enableBeginFrameControl: true, width: plan.viewport?.width ?? 1440, height: plan.viewport?.height ?? 900
+  })
+  await browserClient.detach().catch(() => {})
+  const page = await (await browser.waitForTarget(target => target._targetId === targetId)).page()
+  drawing = pump(await page.createCDPSession())
+  drawing.start()
+  await page.evaluateOnNewDocument(POINTER)
+  tab = page
+  if (url) {
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: TIMEOUT })
+  }
+  await old?.close().catch(() => {})
+  return page
+}
 
 /** One frame of the film: real time passing (live), or the page's clock moved on and a shot (frames). */
 async function frame(page) {
@@ -227,11 +258,16 @@ async function press(page) {
   await act(page, () => page.mouse.up())
 }
 
-async function startFilm(page, id, mode) {
+/** Draws the pointer into the page at the mouse's place. */
+async function armPointer(page, at) {
   await page.evaluate(() => sessionStorage.setItem('video-kit-pointer', 'on'))
   await page.evaluate(POINTER)
+  await page.mouse.move(at[0], at[1])
+}
+
+async function startFilm(page, id, mode) {
   const start = [plan.viewport?.width ?? 1440, (plan.viewport?.height ?? 900) * 0.72].map(v => Math.round(v * 0.5))
-  await page.mouse.move(start[0], start[1])
+  await armPointer(page, start)
   const client = await page.createCDPSession()
   const dir = mkdtempSync(join(tmpdir(), 'film-'))
   filming = { id, mode, client, dir, frames: [], marks: [], mouse: start, began: Date.now() }
@@ -283,13 +319,15 @@ async function stopFilm(page) {
       mark.t = Number(Math.max(0, mark.t - shift).toFixed(2))
     }
   } else {
-    // Time runs freely again and Chrome draws on its own, so the rest of the plan behaves normally.
-    await client.send('Emulation.setVirtualTimePolicy', { policy: 'advance' }).catch(() => {})
-    drawing.start()
     input = ['-framerate', '60', '-i', join(dir, '%05d.jpg'), '-vf', 'format=yuv420p']
   }
   await client.detach().catch(() => {})
-  await page.evaluate(() => sessionStorage.removeItem('video-kit-pointer')).catch(() => {})
+  if (mode === 'frames') {
+    // The rest of the plan goes on in real time, in a fresh tab at the same address.
+    await openTab(page.url())
+  } else {
+    await page.evaluate(() => sessionStorage.removeItem('video-kit-pointer')).catch(() => {})
+  }
   const result = spawnSync('ffmpeg', ['-hide_banner', '-nostdin', '-v', 'error', '-y', ...input, '-an', '-c:v', 'libx264', '-crf', '16', '-preset', 'medium', '-g', '30', '-movflags', '+faststart', mp4], { stdio: 'inherit' })
   rmSync(dir, { recursive: true, force: true })
   if (result.status !== 0) {
@@ -352,13 +390,15 @@ async function run(page, step) {
     }
     await hold(page, 300)
   } else if (filming && filming.mode === 'frames' && url) {
-    await filming.client.send('Emulation.setVirtualTimePolicy', { policy: 'advance' })
-    drawing.start()
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: TIMEOUT })
+    // The load happens off camera, in a fresh tab; the film picks up once it's there.
+    await filming.client.detach().catch(() => {})
+    const next = await openTab(url)
+    await armPointer(next, filming.mouse)
     await drawing.stop()
+    filming.client = await next.createCDPSession()
     await filming.client.send('Emulation.setVirtualTimePolicy', { policy: 'pause' })
     filming.ticks = Math.max(filming.ticks, monotonicMs())
-    await hold(page, 500)
+    await hold(next, 500)
   } else if (url) {
     await page.goto(url, { waitUntil: 'networkidle2', timeout: TIMEOUT })
     if (filming) {
@@ -419,8 +459,12 @@ if (['localhost', '127.0.0.1'].includes(base.hostname)) {
   }
 }
 
+// Local names resolve to the computer, the way they do in its own browser.
+const computer = plan.local?.length ? (await lookup('host.docker.internal')).address : null
+const localNames = computer ? [`--host-resolver-rules=${plan.local.map(name => `MAP ${name} ${computer}`).join(', ')}`] : []
+
 mkdirSync(outDir, { recursive: true })
-const browser = await puppeteer.launch({
+browser = await puppeteer.launch({
   executablePath: findChrome(),
   headless: 'shell',
   acceptInsecureCerts: true,
@@ -436,30 +480,22 @@ const browser = await puppeteer.launch({
     // the wrong element for a frame.
     `--window-size=${plan.viewport?.width ?? 1440},${plan.viewport?.height ?? 900}`, '--force-device-scale-factor=2',
     // Frames drawn only when asked, at the time given: see `filming`.
-    '--deterministic-mode', '--enable-begin-frame-control'
+    '--deterministic-mode', '--enable-begin-frame-control',
+    ...localNames
   ],
   defaultViewport: null
 })
 try {
-  // A tab whose frames are drawn on request (begin-frame control), with a pump that asks for one
-  // every 16 ms whenever nothing is being filmed, so pages load and render as usual.
-  const browserClient = await browser.target().createCDPSession()
-  const { targetId } = await browserClient.send('Target.createTarget', {
-    url: 'about:blank', enableBeginFrameControl: true, width: plan.viewport?.width ?? 1440, height: plan.viewport?.height ?? 900
-  })
-  const page = await (await browser.waitForTarget(target => target._targetId === targetId)).page()
-  drawing = pump(await page.createCDPSession())
-  drawing.start()
-  await page.evaluateOnNewDocument(POINTER)
+  await openTab()
   for (const step of [...(plan.login ?? []), ...plan.steps]) {
     try {
-      await run(page, step)
+      await run(tab, step)
     } catch (error) {
-      await page.screenshot({ path: join(outDir, '_failed.png') }).catch(() => {})
+      await tab.screenshot({ path: join(outDir, '_failed.png') }).catch(() => {})
       throw new Error(`Step ${JSON.stringify(step)} failed: ${error.message}. The page at that moment: ${join(outDir, '_failed.png')}`)
     }
   }
-  await stopFilm(page)
+  await stopFilm(tab)
 } finally {
   await drawing?.stop()
   await browser.close()

@@ -18,6 +18,8 @@ npm run studio                       # live preview with a timeline
 ./render.sh clip <file> <name>       # a screen recording you made → public/recordings/<name>.mp4
 ./render.sh site <url> <folder>      # colours, fonts, logo, wording and screenshots of a public website
 ./render.sh show out/<video>-4k.mp4  # open a finished video and show it in its folder
+./render.sh voice <folder>           # record src/videos/<folder>/voice.json → public/voice/<folder>/ (Node, no Docker)
+./render.sh voice-sample "<line>" af_heart am_michael  # hear a line in each voice → out/voice-samples/
 ```
 
 Rendering runs in Docker (no browser on your machine), the same on macOS, Windows (Git Bash) and

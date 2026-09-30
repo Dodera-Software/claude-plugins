@@ -54,6 +54,14 @@ function schedule({ stops }: FlythroughProps) {
   })
 }
 
+/**
+ * When the camera settles at each stop and when it leaves, in the scene's frames: to start a
+ * voiceover line as a stop comes into view (`voice: [{ line, at: stops[0].arrive - 20 }, …]`).
+ */
+export function flythroughStops(props: FlythroughProps): { arrive: number, leave: number }[] {
+  return schedule(props).map(({ arrive, leave }) => ({ arrive, leave }))
+}
+
 export function flythroughFrames(props: FlythroughProps): number {
   return schedule(props).at(-1)!.leave + 20
 }

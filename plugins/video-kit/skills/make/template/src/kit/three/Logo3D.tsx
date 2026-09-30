@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { cancelRender, continueRender, delayRender, staticFile } from 'remotion'
 import {
   Box3, BufferGeometry, DoubleSide, ExtrudeGeometry, Path, Shape, SRGBColorSpace, TextureLoader,
-  Vector2, type Texture
+  Vector2, Vector3, type Texture
 } from 'three'
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js'
 import { BrandProvider, useBrand, type Brand } from '../brand'
@@ -63,6 +63,18 @@ function logoParts(markup: string, size: number, depth: number, fallback: string
     return null
   }
   const { paths } = new SVGLoader().parse(markup)
+  // How big the logo is in its own units (a viewBox can be 35 wide or 800): the bevel is a small
+  // share of that. A fixed bevel rounds a small logo's shapes into blobs.
+  const extent = new Box3()
+  for (const path of paths) {
+    for (const sub of path.subPaths) {
+      for (const point of sub.getPoints()) {
+        extent.expandByPoint(new Vector3(point.x, point.y, 0))
+      }
+    }
+  }
+  const extentAcross = Math.max(extent.max.x - extent.min.x, extent.max.y - extent.min.y) || 1
+  const bevelSize = extentAcross * 0.004
   const parts: Part[] = []
   let z = 0
   for (const path of paths) {
@@ -85,7 +97,7 @@ function logoParts(markup: string, size: number, depth: number, fallback: string
         solid.holes = holes.map(hole => new Path(flipped(hole)))
         return solid
       })
-      const geometry = new ExtrudeGeometry(shapes, { depth: 1, bevelEnabled: true, bevelThickness: 0.25, bevelSize: 1.2, bevelSegments: 4, curveSegments: 24 })
+      const geometry = new ExtrudeGeometry(shapes, { depth: 1, bevelEnabled: true, bevelThickness: 0.12, bevelSize, bevelSegments: 3, curveSegments: 24 })
       geometry.translate(0, 0, z)
       parts.push({ geometry, color: fill, solid: true })
       z += 1
