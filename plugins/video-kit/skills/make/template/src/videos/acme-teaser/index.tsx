@@ -15,10 +15,10 @@ export const acmeTeaser = inLanguages(WORDS, words => defineVideo({
   // The first frame, and so the preview Slack, LinkedIn and X show.
   cover: { title: words.cover },
   scenes: [
-    { component: () => <ChatPileUp {...words.hook} />, frames: chatPileUpFrames(words.hook) },
-    { component: () => <WordSwap {...words.intro} />, frames: wordSwapFrames(words.intro), enter: push('from-right') },
-    { component: () => <PromiseList {...words.promises} />, frames: promiseListFrames(words.promises), enter: push('from-right') },
+    { name: 'The problem', component: () => <ChatPileUp {...words.hook} />, frames: chatPileUpFrames(words.hook) },
+    { name: 'Meet Acme', component: () => <WordSwap {...words.intro} />, frames: wordSwapFrames(words.intro), enter: push('from-right') },
+    { name: 'What it does', component: () => <PromiseList {...words.promises} />, frames: promiseListFrames(words.promises), enter: push('from-right') },
     // The first promise's icon opens into the end card.
-    { component: () => <EndCard {...words.end} />, frames: endCardFrames(words.end), enter: grow({ ...promiseListLeadIcon(words.promises), color: acme.colors.accent }) }
+    { name: 'End card', component: () => <EndCard {...words.end} />, frames: endCardFrames(words.end), enter: grow({ ...promiseListLeadIcon(words.promises), color: acme.colors.accent }) }
   ]
 }))

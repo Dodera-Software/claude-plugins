@@ -9,6 +9,8 @@ npm install
 ./render.sh                          # list the videos
 ./render.sh <VideoId>                # → out/<video>-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg + glitch scan
 ./render.sh <VideoId> still 120 900  # single frames, to check a layout
+./render.sh <VideoId> quick          # only the 1080p video, about a quarter of the time
+./render.sh room [VideoId]           # the edit room: play, edit words, lengths and voice lines, notes, export
 ./render.sh sheet reference.mp4      # contact sheets of a video you want to learn from
 npm run timeline                     # where each scene starts
 npm run studio                       # live preview with a timeline

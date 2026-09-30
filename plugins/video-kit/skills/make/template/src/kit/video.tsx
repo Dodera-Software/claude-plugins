@@ -8,10 +8,13 @@ import { LookProvider, lookColors, type LookName } from './look'
 import { easeInOut, FPS } from './motion'
 import { Cover, type CoverProps } from './scenes/Cover'
 import { crossfade, flood, type SceneTransition } from './transitions'
+import tweaks from '../tweaks.json'
 
 export { FORMATS }
 
 export interface Scene {
+  /** What the storyboard calls it ("The problem", "Logo reveal"): the edit room lists scenes by it. */
+  name?: string
   component: ComponentType
   /** Frames at 60 fps. Every line must get readingFrames() of full visibility inside it. */
   frames: number
@@ -70,7 +73,32 @@ export interface VideoDefinition {
   width: number
   height: number
   /** Where each scene starts and how long its entrance overlaps the previous one: for checking frames. */
-  timeline: { starts: number[], frames: number[], enters: number[], cover: boolean, voice: ({ line: string, from: number, to: number } | null)[] }
+  timeline: {
+    starts: number[]
+    frames: number[]
+    enters: number[]
+    cover: boolean
+    voice: ({ line: string, text: string, from: number, to: number } | null)[]
+    /** Each scene's name, for the edit room ("Cover", then the scenes' own or "Scene 2"). */
+    names: string[]
+    /** The id it was defined with, before languages and shapes were added: the key for tweaks. */
+    baseId: string
+  }
+}
+
+/**
+ * Lengths changed in the edit room, by video id (as defined, before language and shape suffixes)
+ * and scene number (from 1, the cover not counted): frames added (or taken away). src/tweaks.json.
+ */
+type Tweaks = Record<string, Record<string, number>>
+
+/** A scene made longer or shorter in the edit room: never shorter than its voice line needs, nor by more than a quarter. */
+function tweaked(scene: Scene, index: number, id: string): Scene {
+  const extra = (tweaks as Tweaks)[id]?.[String(index + 1)] ?? 0
+  if (!extra) {
+    return scene
+  }
+  return { ...scene, frames: Math.max(Math.round(scene.frames * 0.75), scene.frames + extra) }
 }
 
 /** One video: its brand, and its scenes in order with how each one grows out of the last. */
@@ -78,7 +106,7 @@ export function defineVideo({ id, brand: base, format = 'landscape', look = 'edi
   const { width, height } = FORMATS[format]
   const brand = lookColors(base, look)
   // A scene's last line must end before the next scene starts coming in over it.
-  const ownScenes = givenScenes.map((scene, index) => withVoice(scene, index, voiceover, givenScenes[index + 1]?.enter?.frames ?? (givenScenes[index + 1] ? crossfade().frames : 0)))
+  const ownScenes = givenScenes.map((scene, index) => withVoice(tweaked(scene, index, id), index, voiceover, givenScenes[index + 1]?.enter?.frames ?? (givenScenes[index + 1] ? crossfade().frames : 0)))
   const opening = cover === false ? undefined : (ownScenes[0].enter ?? flood({ x: width / 2, y: height / 2 }))
   const scenes: Scene[] = cover === false || !opening
     ? ownScenes
@@ -97,7 +125,7 @@ export function defineVideo({ id, brand: base, format = 'landscape', look = 'edi
   // Each scene's line plays from its start frame inside the scene.
   const voiceTimes = scenes.map((scene, index) => {
     const lines = (scene as VoicedScene).voiceLines ?? []
-    return lines.length ? { line: lines.map(l => l.line).join(', '), from: starts[index] + lines[0].at, to: starts[index] + lines.at(-1)!.at + lines.at(-1)!.frames } : null
+    return lines.length ? { line: lines.map(l => l.line).join(', '), text: lines.map(l => voiceover?.lines[l.line]?.text ?? '').join(' '), from: starts[index] + lines[0].at, to: starts[index] + lines.at(-1)!.at + lines.at(-1)!.frames } : null
   })
   const voiceLines = scenes.map(scene => ((scene as VoicedScene).voiceLines ?? []).map(voice => (
     <Sequence key={`voice-${voice.line}`} from={voice.at} layout="none"><Audio src={staticFile(voice.src)} /></Sequence>
@@ -134,7 +162,15 @@ export function defineVideo({ id, brand: base, format = 'landscape', look = 'edi
     fps: FPS,
     width,
     height,
-    timeline: { starts, frames: scenes.map(scene => scene.frames), enters, cover: cover !== false, voice: voiceTimes }
+    timeline: {
+      starts,
+      frames: scenes.map(scene => scene.frames),
+      enters,
+      cover: cover !== false,
+      voice: voiceTimes,
+      names: scenes.map((scene, index) => (cover !== false && index === 0 ? 'Cover' : scene.name ?? `Scene ${cover !== false ? index : index + 1}`)),
+      baseId: id
+    }
   }
 }
 

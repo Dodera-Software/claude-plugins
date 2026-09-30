@@ -95,6 +95,12 @@ first? Ask for "just the quick one": 1080p only, in about a quarter of the time.
 
 Give notes like a director ("this part is too fast", "make the ending punchier") and it redoes them.
 
+**Watch and tweak it live.** Ask for the edit room (Claude offers it too) and the video opens in
+your browser, playing live. Jump between scenes, change any word on screen, make a scene hold
+longer, rewrite what the narrator says and hear it again, leave a note for Claude on the exact
+moment ("the logo should land here"), and export when you're happy. It runs only on your computer
+and only while it's open; heavy 3D can stutter in the preview, never in the finished video.
+
 ## Install
 
 In Claude Code:

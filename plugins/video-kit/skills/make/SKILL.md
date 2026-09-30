@@ -155,9 +155,10 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
 - `video/src/videos/acme-teaser` and `video/src/brands/acme` are a made-up example; delete them once
   the product's own video exists. If `video/` exists already, add the new video next to the others.
 - **An older studio:** if `video/` came from an earlier version (it lacks files the template has,
-  like `src/kit/three/` or `scripts/site.mjs`), bring it up to date first: copy from the template
+  like `src/kit/three/`, `scripts/site.mjs` or `scripts/room.mjs`), bring it up to date first: copy from the template
   `src/kit/`, `scripts/`, `render.sh`, `Dockerfile`, `fonts.conf`, `package.json`, `tsconfig.json`,
-  `package-lock.json` and `README.md`, never `src/videos/`, `src/brands/` or `public/`. Remove
+  `package-lock.json`, `README.md` and `src/room/` (plus `src/tweaks.json` if it's missing, as
+  `{}`), never `src/videos/`, `src/brands/` or `public/`. Remove
   `src/kit/audio/` and `public/audio/` if they're there, and any `<Sfx>` or `sound:` in their own videos (the kit
   has no sound effects any more). Then `npm install` and `npm run typecheck`; if an existing video no longer
   compiles, fix it to the new kit API. Say in one line that you updated the video tools.
@@ -210,7 +211,9 @@ Follow references/pacing.md. Wait for a yes or changes.
 - `video/src/videos/<slug>/`: `content.ts` holds every word; `index.tsx` calls
   `defineVideo({ id, brand, format, look, cover: { title }, scenes })`; the product's own
   scenes, including the original scene for your idea, go in `scenes/` and `components/`. Register
-  it in `video/src/videos/index.ts`.
+  it in `video/src/videos/index.ts`. Give every scene a `name`, the storyboard's title for it ("The
+  problem", "Logo reveal"): the edit room lists scenes by it. Every word shown on screen lives in
+  `content.ts`, which is also what lets the person edit words in the edit room.
 - **Several shapes:** `inFormats(['landscape', 'square'], format => defineVideo({ …, format }))`
   makes one video per shape (`<Id>-landscape`, `<Id>-square`) from the same storyboard. Kit scenes
   lay themselves out for each shape (stacked in square and tall frames); your own scenes must too
@@ -255,8 +258,9 @@ word alone, headings over three lines, empty areas, anything cut at the edge, an
 claim not in the brief. "Too fast to read" is what viewers complain about; slow is fixable.
 
 Then show the person 3–4 of those images (open them, or point to them), one line each on the moment
-they show, and ask "Shall I make the full video?" Their notes now cost seconds; after the full
-video, minutes. With a narrator, `npm run timeline` shows when each line is said: check that none
+they show, and ask "Shall I make the full video, or would you like to watch it live first and
+tweak it yourself?" (the edit room, below). Their notes now cost seconds; after the full video,
+minutes. With a narrator, `npm run timeline` shows when each line is said: check that none
 runs into the next scene's entrance, and ask the person to listen to the voice's pace in the full
 video, which stills can't show.
 
@@ -281,6 +285,38 @@ that takes more than a minute. Then:
   YouTube asks for"; square and tall: "the 1080p one is what you upload"), and anything you
   assumed.
 - Invite notes like a director gives them: "this part is too fast", "make the ending punchier".
+  Or offer the edit room, where they can watch it and point at the exact moment.
+
+## The edit room (when they want to watch and tweak it themselves)
+
+A page in their browser that plays the video live, with its scenes, words and narrator lines to
+change on the spot, notes for you on any moment, and export. Offer it after the stills ("watch it
+live first?"), after the full video (for notes), and whenever they want to change something small
+themselves. It runs only on their computer (`localhost`), and only while it's open.
+
+1. Start it in the background: `./render.sh room <VideoId>` (Bash, `run_in_background`). It opens
+   the browser by itself and prints its address; tell them in one line: "The edit room is open in
+   your browser. Play it, change words or lengths directly, and leave notes for me on any moment."
+2. Watch for their notes: run `node scripts/notes.mjs watch` with the Monitor tool (30-minute
+   limit: start it again when it ends, while the room is open). Each line it prints is a note, as
+   JSON: which video, scene and moment, and what they want. While it runs, the page tells them
+   you're listening.
+3. For each note: make the change in the code (as for any note: the storyboard, the quality bar,
+   the kit's rules), `npm run typecheck`, and the page reloads by itself with the change. Then
+   `node scripts/notes.mjs done <id> "<one line in plain words: what you changed>"`. If it's
+   unclear, `node scripts/notes.mjs ask <id> "<one short question>"`; they answer in the page, which
+   arrives as a new note. Mention each change in the chat in one line too.
+4. What they change themselves needs nothing from you: words save into `content.ts`, scene lengths
+   into `src/tweaks.json` (half-second steps, applied to every language and shape, never below what
+   the narration needs), narrator lines into `voice.json`, recorded again. Their export runs the
+   same render as yours, with its progress in the page, and copies the files to the folder they
+   pick (the video's folder, Downloads, the Desktop, or any folder through the system's picker).
+5. When they're done, they press "Close room" (or ask you: stop the background process). Stop the
+   notes watch too. If notes arrive while you weren't listening, they wait in `notes.json`: "apply
+   my notes" means `node scripts/notes.mjs list`, then each one as above.
+
+The preview draws each frame live, so heavy 3D can stutter there; the page says so. Stills and
+the rendered video stay the real check.
 
 ## Never
 

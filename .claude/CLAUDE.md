@@ -43,7 +43,10 @@ skills/make/template/             the studio copied into a product repo as video
   src/brands/acme/                example brand (tokens, logo, Brand object)
   src/videos/acme-teaser/         example video built only from kit scenes
   render.sh                       every render goes through this: hands the command to scripts/render.mjs
+  src/room/                       the edit room's page (Remotion Player + panels); scripts/room.mjs serves it
+  src/tweaks.json                 scene lengths changed in the edit room, by video id and scene number
   scripts/                        render.mjs (Docker, on macOS, Windows and Linux), finish.mjs (previews, glitch scan),
+                                  room.mjs (the edit room's server), notes.mjs (Claude's side of its notes),
                                   timeline.mjs, capture.mjs (screenshots and recordings), clip.mjs (people's own
                                   recordings), site.mjs
   fonts.conf                      makes Inter answer for system fonts in captures
@@ -204,6 +207,18 @@ bundled ffmpeg (it has no `fps` filter; use `-r`):
 - **`MotionBlur` never wraps WebGL.** Each sample is another copy of its children; around a
   `Stage3D` or a `ThreeCanvas` that's six 3D canvases per frame, and at 4K a frame took longer than
   the 33 s Remotion allows. It's for `Space` (the fly-through) only.
+- **The edit room runs on the computer, not in Docker.** `scripts/room.mjs` bundles `src/room/`
+  with esbuild (watching: every change to a file the videos use rebuilds it, and the page reloads,
+  keeping its video, frame and tab, but never while someone is typing), serves `public/` at the
+  root as `staticFile()` expects, and listens on 127.0.0.1 only. Every change goes through its API,
+  which needs an `X-Edit-Room` header (a page on another site can't send one, so it can't write
+  here) and writes only `content.ts` (words, found with the TypeScript parser and checked unchanged
+  before each save), `voice.json`, `src/tweaks.json` and `notes.json`; an export renders into `out/` and then copies
+  the files to the folder they chose (the system's own picker: osascript, PowerShell, zenity), never
+  over an existing file. Claude hears notes through
+  `scripts/notes.mjs watch`, whose heartbeat is how the page knows Claude is listening. Export runs
+  `render.mjs` as Claude would. Check the page with headless Chrome and puppeteer-core, not only
+  the type check: a render that works can still fail in the Player.
 - **The quality bar is in the skill**, not only in reviews: style.md's "never AI slop" checklist
   runs before stills are shown, and the directed interview (references/interview.md) exists
   because the person's vision, not the tool, is what makes a video good.

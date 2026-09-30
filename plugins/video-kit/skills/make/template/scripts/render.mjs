@@ -20,6 +20,8 @@
 //   ./render.sh show <file>              open a finished video and show it in its folder
 //   ./render.sh voice <folder>           record src/videos/<folder>/voice.json → public/voice/<folder>/
 //   ./render.sh voice-sample "<line>" af_heart am_michael …  the line in each voice → out/voice-samples/
+//   ./render.sh room [VideoId]           the edit room: the videos live in the browser, to change and
+//                                        export (on the computer with Node, only on 127.0.0.1)
 //                                        (voices run on the computer with Node, no Docker)
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -317,6 +319,11 @@ if (command === 'show') {
   process.exit(0)
 }
 
+if (command === 'room') {
+  const result = spawnSync(process.execPath, [join(HERE, 'scripts', 'room.mjs'), ...rest], { stdio: 'inherit' })
+  process.exit(result.status ?? 1)
+}
+
 if (command === 'voice' || command === 'voice-sample') {
   const args = command === 'voice' ? rest : ['--sample', ...rest]
   const result = spawnSync(process.execPath, [join(HERE, 'scripts', 'voice.mjs'), ...args], { stdio: 'inherit' })
@@ -408,6 +415,9 @@ if (command === 'site') {
   finish()
 }
 
+if (rest[0] !== 'still') {
+  progress.write(0, 'getting ready: preparing the video')
+}
 inImage(image, ['bundle', 'src/index.ts', '--out-dir=out/bundle'])
 
 if (rest[0] === 'still') {

@@ -65,7 +65,8 @@ lists it as `cover`.
 | `BrowserFrame` | A quiet browser window (dots and address) around anything |
 | `ToolIcon` | Google Meet, Slack, GitHub, Jira, file, Claude |
 
-Videos: `defineVideo({ id, brand, format, look, cover: { title }, voiceover, scenes })`, where `format` is
+Videos: `defineVideo({ id, brand, format, look, cover: { title }, voiceover, scenes })`, each scene
+`{ name, component, frames, enter, voice }` (`name` is what the edit room lists it as), where `format` is
 `'landscape'` (16:9, the default), `'square'` or `'portrait'` (9:16, tall); `look` is `'editorial'`
 (default), `'bold'`, `'technical'` or `'playful'` (style.md); `voiceover` is the recorded narration, when they chose one (voice.md);
 `inLanguages(wordsByLanguage, words => defineVideo(…))` for one video per language (`<Id>-<lang>`),
