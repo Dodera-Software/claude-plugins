@@ -220,8 +220,8 @@ node record.mjs example.json /tmp/ex.mp3 --first 3
 
 Test it as a user would with `claude --plugin-dir /path/to/claude-plugins/plugins/pr-podcast` in
 another repo; a non-interactive run (`claude -p … "/pr-podcast:make <sha> as a news bulletin"`)
-covers everything but the questions. CI (`.github/workflows/pr-podcast.yml`) validates and records
-the example on macOS, Windows and Linux, calling no model. Releasing is as for video-kit, with the
+covers everything but the questions. CI (`.github/workflows/pr-podcast.yml`) only validates; record
+the example by hand after engine changes. Releasing is as for video-kit, with the
 tag `pr-podcast-v<version>`; the README's sample episodes are assets on the first release.
 
 ### Hard-won rules
