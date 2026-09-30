@@ -17,11 +17,12 @@ before it could be read. Viewers forgive slow, never unreadable.
 | --- | --- |
 | Hook | within the first 3 s something relatable is on screen |
 | A scene | 4–9 s; a product demo scene up to 12 s |
-| Transition between scenes | 30–36 frames for flood, grow and push; 20 for a crossfade |
+| Transition between scenes | 30–36 frames for flood, grow and push; 40 for a dip; 20 for a crossfade |
 | End card | at least 5 s, so someone can read the address |
 | Social clip | 10–20 s, 3–4 scenes |
 | Feature teaser | 15–30 s, 4–6 scenes |
 | Launch film | 45–75 s, 8–10 scenes |
+| Film form | 30–60 s, 2–4 shots; the camera travels about 1.6 s between stops and rests while each line is read |
 
 ## Rhythm
 

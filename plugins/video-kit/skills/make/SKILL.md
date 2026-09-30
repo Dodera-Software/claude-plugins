@@ -92,7 +92,9 @@ When they describe scenes or an idea, that is the plan: build what they describe
 what they left open, and say where you had to adapt it (a claim the product can't back, a scene
 too long to read).
 
-Don't ask for the rest; decide it and show it in the storyboard, where it's easy to correct: who
+Don't ask for the rest; decide it and show it in the storyboard, where it's easy to correct: the
+form (chapters, or a film: one continuous camera journey, often in 3D; style.md, "Two forms"; a
+film whenever they ask for something cinematic, 3D, "like a movie" or "not like a presentation"), who
 watches it (customers unless said otherwise), the call to action (the product's website), tone
 (from the look: a light joke only in playful; confident and warm otherwise, never salesy, no hype
 words). If they mention a video they'd like to
@@ -131,7 +133,7 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
 - `video/src/videos/acme-teaser` and `video/src/brands/acme` are a made-up example; delete them once
   the product's own video exists. If `video/` exists already, add the new video next to the others.
 - **An older studio:** if `video/` came from an earlier version (it lacks files the template has,
-  like `src/kit/layout.ts` or `scripts/site.mjs`), bring it up to date first: copy from the template
+  like `src/kit/three/` or `scripts/site.mjs`), bring it up to date first: copy from the template
   `src/kit/`, `scripts/`, `render.sh`, `Dockerfile`, `fonts.conf`, `package.json`,
   `package-lock.json`, `README.md` and `public/audio/`, never `src/videos/`, `src/brands/` or the
   rest of `public/`. Then `npm install` and `npm run typecheck`; if an existing video no longer
@@ -169,6 +171,7 @@ look, the signature moment, a varied structure. Then show the plan the way a per
 - **The idea**, one line ("The whole film happens inside Acme's terminal: every feature is a
   command"), and one different idea as the alternative, one line.
 - **The look**, one line on which and why.
+- **The form**, one line: scene by scene, or one continuous film (and why).
 - One line per scene, in their words ("Opens on a team chat where nobody knows who's doing the
   invoice export; then…"), with its length in seconds and what it shows. Mark the signature moment.
 - The few decisions you made for them (audience, website, sound).
@@ -200,6 +203,10 @@ Follow references/pacing.md. Wait for a yes or changes.
 - The cover: every video opens on a composed frame (logo, name and `cover.title`, the video's
   promise in a few words), because Slack, LinkedIn, X, WhatsApp and Finder show a video's first
   frame as its preview.
+- **A film** (style.md, "Two forms"): `Flythrough` through the product's screens (rebuilt ones as
+  its stops' `visual`), your own shots in `Space` or `Stage3D`, words as `Caption`s, `LogoReveal`
+  for the logo; references/3d.md, including its rules: everything moves from the frame, nothing
+  spins. 3D is also there for a chapters video's signature moment when the idea needs depth.
 - Transitions: every scene after the first says how it arrives, in the look's own set
   (references/style.md, "Looks"): growing out of something visible in the previous scene where it
   can, varied from scene to scene. Crossfade only when nothing else fits.

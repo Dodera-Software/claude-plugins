@@ -33,7 +33,13 @@ still images to approve, and makes the video.
 colour fills the screen), technical (dark, for developer tools) and playful. Claude builds each
 video around its own idea and one moment only your product could have, from a wide range of
 scenes (numbers counting up, words swapping, a typing terminal, before and after, a wall of
-screens, step-by-step, quotes…), so no two videos look alike.
+screens, step-by-step, quotes, a flight through your screens, your logo in 3D…), so no two videos
+look alike.
+
+**Scene by scene, or like a film.** Most videos go scene by scene, each with its own point. Ask
+for something cinematic (or let Claude choose it) and you get a film instead: one continuous camera
+journey through your product's screens, words appearing over the picture like subtitles, and
+your logo as a solid 3D object at the end.
 
 **Describe it yourself if you like:** "open on our logo drawing itself, then show the three
 dashboards side by side" and it builds exactly that.

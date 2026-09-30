@@ -31,6 +31,26 @@ words, 3–4 features that exist today, the demo data, where to send people.
 10 s or viewers don't know what they're watching; take `grow` boxes from stills taken after camera
 moves.
 
+## Film (30–60 s, landscape; square or tall work too)
+
+**Find out:** the 3–5 places in the product a user passes through on their way to the result, in
+order (the inbox, the task, the reminder, the report); the one line each deserves; the logo as an
+SVG.
+
+**Direction:** one journey, told by the camera, not by headings (style.md, "Two forms"). The
+viewer travels through the product the way a user's work does; words stay few and low on the
+picture.
+
+| Time | Beat | Ways to fill it |
+| --- | --- | --- |
+| 0–4 s | The world | the cover, then the camera opening wide on everything ahead (`Flythrough` does this on its own) |
+| 4–40 s | The journey | `Flythrough` through the product's screens, rebuilt or captured, one line per stop; or your own `Space` or `Stage3D` scene built from the product's shapes |
+| 40–48 s | The object | `LogoReveal`, the camera landing on the logo |
+| 48–55 s | Close | `EndCard` |
+
+**Gotchas:** a line per stop, not a paragraph, or the camera waits too long; cut or grow between
+shots, never slide; check the stops in every shape, since the camera frames each screen for it.
+
 ## Feature teaser (15–30 s, landscape or portrait)
 
 **Find out:** the feature, the question or task it answers, where it lives (in the app, in Slack,

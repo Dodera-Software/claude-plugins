@@ -17,6 +17,9 @@ await build({
   packages: 'external',
   logLevel: 'error'
 })
+// Loading the kit loads three.js through a CommonJS path that prints a deprecation notice; it
+// means nothing here, so keep the timeline's output clean.
+process.removeAllListeners('warning')
 const { VIDEOS } = await import(pathToFileURL(outfile).href)
 if (process.argv.includes('--ids')) {
   console.log(VIDEOS.map(video => video.id).join('\n'))

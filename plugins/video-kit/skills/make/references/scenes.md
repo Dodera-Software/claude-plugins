@@ -35,12 +35,15 @@ lists it as `cover`.
 | `Terminal` | Commands typing themselves, output following: developer tools and CLIs | `lines: { command?, output?, tone?: 'ok' \| 'muted' \| 'error' \| 'accent' }[]`, `title?`, `caption?` |
 | `PromiseList` | Claims building one under another | `items: { icon: LucideIcon, text }[]` (3–5, first is the headline). `promiseListLeadIcon(props, format, look)` gives the headline icon's box, for `grow` into the next scene |
 | `EndCard` | Logo, name, tagline, "Works with" icons, the address | `tagline`, `taglineAccent?`, `worksWith?: ToolKind[]`, `cta?` |
+| `Flythrough` | The film form: the product's screens hang in space, the camera flies from one to the next and settles while its line appears below (3d.md) | `stops: { image? \| visual?, caption, detail?, accent? }[]` (2–5), `viewport?` |
+| `LogoReveal` | The logo as a solid object, the camera gliding round to face it, name and tagline beneath (3d.md) | `tagline?`, `taglineAccent?` |
 
 ## Kit components
 
 | Component | What it does |
 | --- | --- |
 | `ChapterTitle` | Accent label + claim + muted aside + sub line, revealed in sequence |
+| `Caption` | A film's line: words low over the picture, arriving at `start` and leaving by `end`, for words riding on a continuous shot (style.md, "Two forms") |
 | `Eyebrow` | The small accent label over a heading, in the look's label font |
 | `RevealWords` / `revealEnd()` | Words arriving the look's way (drifting, snapping, typed, bouncing); `accent` words in the brand colour |
 | `TerminalWindow` / `terminalSchedule()` | The typing terminal on its own, for `SplitScreen`'s `visual` or your own scenes |
@@ -76,6 +79,12 @@ Helpers: `progress(frame, start, duration, easing?)`, `mix(a, b, t)`, `seconds(n
 `useLook()` (`type`, `motion`, `align`, `round`, `mono`), `inkOn(colour)` (white or dark text,
 whichever reads on it).
 
+## 3D
+
+`Space` and `Place` put scene elements in depth, `Stage3D` and `Logo3D` make solid lit objects,
+`cameraAt` moves the camera through either: see 3d.md, with its rules (everything from the frame,
+no clocks).
+
 ## Scenes that show the product
 
 Built per product, in the video's own folder: see product-scenes.md. When a pattern turns out
@@ -93,7 +102,8 @@ Set on the incoming scene: `{ component, frames, enter: grow({ … }) }`.
 | `wipe` | a hard edge sweeps the next scene in: graphic, bold and technical looks | `'from-left'`, `'from-top-right'`, … |
 | `pushCut` | a punchy zoom cut with a brief flash: the next beat hits (bold, playful) | frames |
 | `cut` | no transition, on the beat (technical, bold) | — |
-| `crossfade` | nothing on screen can become the next scene | frames |
+| `dip` | two full pictures follow each other (a film's last shot, then the end card): the first fades out to the canvas before the next fades in, so they never overlap | frames (default 40) |
+| `crossfade` | nothing on screen can become the next scene, and both are sparse; between busy scenes it shows both at once, so use `dip` | frames |
 
 Take the box from a rendered still of the outgoing scene's last frames (after any camera move),
 then check the middle of the transition as a still. The growing shape keeps the element's colour

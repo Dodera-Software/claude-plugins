@@ -35,6 +35,24 @@ A video that looks like the last one we made is a failure, even if every frame i
 - **Recipes are starting points** (recipes.md). Change the order, swap scenes, cut beats; never
   reproduce one as is twice.
 
+## Two forms
+
+A video is told one of two ways. Choose the form with the idea, name it in the storyboard, and
+offer the other as the alternative when it would suit the product too.
+
+- **Chapters** (the default): scene after scene, each one idea with its own words and layout, joined
+  by transitions. Clear and quick to follow: features, how it works, what's new, social clips.
+- **Film**: one continuous shot through the product's world, like a film's opening sequence. The
+  camera travels (through the product's screens with `Flythrough`, around its logo with
+  `LogoReveal`, through your own 3D scene), and the words ride on the picture as `Caption`s instead
+  of getting scenes of their own. No title cards, no eyebrows, no lists; few words, each line
+  short. Between shots, `cut`, a `grow` from what the camera ended on, or a `dip` to the canvas;
+  never a slide or a crossfade. Suits launch films, brand films, premium products, and anyone who
+  asks for something cinematic, 3D, or "not like a presentation". 3d.md has the tools.
+
+A film still opens on the cover, makes clear within 10 s what the product is, and ends on
+`EndCard` (or `LogoReveal`, then `EndCard`).
+
 ## Looks
 
 `defineVideo({ look })` sets the colours, type, motion and background of the whole video over the
@@ -42,8 +60,8 @@ brand. Kit scenes follow it; your own scenes read it with `useLook()` (product-s
 
 | Look | Feels | Pick it for | Transitions that suit | Scenes that shine |
 | --- | --- | --- | --- | --- |
-| `editorial` | calm, spacious, light type, words drift into focus | premium, B2B, finance, health, calm brands | `grow`, `flood`, `crossfade` | `SplitScreen`, `BigQuote`, `ScreenMosaic`, `Steps` |
-| `bold` | the brand colour fills the frame, heavy type, fast | launches, announcements, confident consumer brands | `wipe`, `pushCut`, `cut` | `WordSwap`, `BigNumber`, `TitleCard`, `BeforeAfter` |
+| `editorial` | calm, spacious, light type, words drift into focus | premium, B2B, finance, health, calm brands | `grow`, `flood`, `dip` | `SplitScreen`, `BigQuote`, `ScreenMosaic`, `Steps`, `Flythrough` |
+| `bold` | the brand colour fills the frame, heavy type, fast | launches, announcements, confident consumer brands | `wipe`, `pushCut`, `cut` | `WordSwap`, `BigNumber`, `TitleCard`, `BeforeAfter`, `LogoReveal` |
 | `technical` | dark, faint grid, monospaced labels, text snaps in | developer tools, APIs, infrastructure, data | `cut`, `push`, `wipe` | `Terminal`, `Steps`, `Marquee`, `SplitScreen` |
 | `playful` | tinted canvas, soft drifting shapes, bouncy, centred | consumer apps, education, community, fun brands | `grow`, `pushCut`, `flood` | `WordSwap`, `ChatPileUp`, `BigNumber`, `Marquee` |
 
@@ -73,5 +91,6 @@ design. Say which look and why in one line of the storyboard.
 
 ## Never
 
-Purple or blue gradients, glassmorphism, glows, sparkle or AI icons, emoji, lens flares, spinning
-3D, stock photos, fake metrics, "revolutionary", "supercharge", "unlock", "seamless".
+Purple or blue gradients, glassmorphism, glows, sparkle or AI icons, emoji, lens flares, 3D that
+spins or floats for its own sake (the camera moves, objects rest), stock photos, fake metrics,
+"revolutionary", "supercharge", "unlock", "seamless".

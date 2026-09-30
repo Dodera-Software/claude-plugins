@@ -77,6 +77,17 @@ function Grow({ children, presentationDirection, presentationProgress, passedPro
   )
 }
 
+/**
+ * The outgoing scene fades away to the canvas, then the incoming one fades up from it: the two are
+ * never on screen together. Scenes are transparent, so the canvas is what shows in between.
+ */
+function Dip({ children, presentationDirection, presentationProgress }: TransitionPresentationComponentProps<Record<string, never>>) {
+  const opacity = presentationDirection === 'exiting'
+    ? 1 - easeInOut(clamp01(presentationProgress / 0.5))
+    : easeInOut(clamp01((presentationProgress - 0.5) / 0.5))
+  return <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>
+}
+
 /** TransitionSeries takes any presentation; each keeps its own props type up to here. */
 function transition<P extends Record<string, unknown>>(presentation: TransitionPresentation<P>, frames: number): SceneTransition {
   return { presentation: presentation as unknown as SceneTransition['presentation'], frames }
@@ -115,7 +126,15 @@ export function cut(): SceneTransition {
   return transition(none(), 1)
 }
 
-/** The fallback. Use it only when nothing on screen can become the next scene. */
+/**
+ * Out to the canvas, then in: the calm way between two full pictures (a film's last shot and the
+ * end card), where a crossfade would show both at once.
+ */
+export function dip(frames = 40): SceneTransition {
+  return transition({ component: Dip, props: {} }, frames)
+}
+
+/** The fallback. Use it only when nothing on screen can become the next scene, and both are sparse; between two busy pictures, `dip`. */
 export function crossfade(frames = 20): SceneTransition {
   return transition(fade(), frames)
 }

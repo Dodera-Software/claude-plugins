@@ -35,9 +35,10 @@ video (`acme`) are made up, and real products' videos live in their own repos.
 skills/make/SKILL.md              the workflow Claude follows: brief (questionnaire), readiness and setup, investigation, storyboard, build, stills, render
 skills/website/SKILL.md           /video-kit:website: asks for the address, then the make workflow in website mode
 skills/changelog/                 /video-kit:changelog (what's-new videos from recent changes) and release-video.yml, a GitHub Action template
-skills/make/references/*.md       details SKILL.md points to: scenes, product-scenes, style, pacing, audio, brand, recipes, capture, website
+skills/make/references/*.md       details SKILL.md points to: scenes, product-scenes, 3d, style, pacing, audio, brand, recipes, capture, website
 skills/make/template/             the studio copied into a product repo as video/
   src/kit/                        shared: motion helpers, brand context, components, scenes, transitions, sound cues, defineVideo
+  src/kit/three/                  depth: cameraAt, Space/Place (DOM in 3D), Stage3D/Logo3D (three.js)
   src/brands/acme/                example brand (tokens, logo, Brand object)
   src/videos/acme-teaser/         example video built only from kit scenes
   render.sh                       every render goes through this (Docker)
@@ -63,7 +64,7 @@ npm run studio                           # live preview
   `readingFrames()`. Never hard-code a length that holds text.
 - Kit code reads colours through `useBrand()`, never hex values (except third-party marks in
   `ToolIcon`).
-- `references/scenes.md`, `product-scenes.md` and `audio.md` describe the kit's API. Change them in
+- `references/scenes.md`, `product-scenes.md`, `3d.md` and `audio.md` describe the kit's API. Change them in
   the same commit as the code, or Claude will use the kit wrong in users' repos.
 - Kit scenes follow the look (`useLook()`, `useBrand()` colours adapted by `lookColors`). After a
   kit change, look at stills of the changed scenes in all four looks and in wide, square and tall
@@ -141,6 +142,11 @@ bundled ffmpeg (it has no `fps` filter; use `-r`):
 - **One render image per kit version.** Its tag hashes `package.json` and the `Dockerfile`, not the
   lockfile, which `npm install` rewrites (plus `fonts.conf`, which goes into it); `./render.sh clean`
   removes the rest.
+- **3D is a function of the frame.** Camera, positions and rotations come from `useCurrentFrame()`
+  (`cameraAt`); never R3F's `useFrame`, a clock or unseeded randomness, since frames render
+  separately and out of order. `Stage3D` renders brand colours untoned (`flat`) with a low
+  environment light: brighter reflections wash a dark brand colour out to pastel. WebGL runs in
+  software in the render container with Remotion's default flags; nothing to configure.
 - **Audio** must be redistributable (CC0) and listed in `public/audio/LICENSES.md`. No music: the
   skill asks "sound effects or silent?" and `defineVideo({ sound: false })` mutes every cue.
 - **Remotion** needs a company licence for companies over three people; the READMEs say so.
