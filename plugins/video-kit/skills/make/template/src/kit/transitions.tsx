@@ -121,11 +121,14 @@ export function pushCut(frames = 18): SceneTransition {
 }
 
 /**
- * A transition needs at least one frame in which both scenes are mounted; a cut shows only the
- * incoming one in it, or that frame would be both scenes on top of each other.
+ * A transition needs at least one frame in which both scenes are mounted. A cut puts the incoming
+ * scene on the canvas colour, so in that frame it covers the outgoing one instead of showing both.
+ * The outgoing scene is left as it is: TransitionSeries wraps it in this component for its whole
+ * length, not just the transition, so hiding it here would hide the entire scene.
  */
 function Cut({ children, presentationDirection }: TransitionPresentationComponentProps<Record<string, never>>) {
-  return presentationDirection === 'exiting' ? null : <AbsoluteFill>{children}</AbsoluteFill>
+  const { colors } = useBrand()
+  return <AbsoluteFill style={presentationDirection === 'entering' ? { background: colors.canvas } : undefined}>{children}</AbsoluteFill>
 }
 
 /** No transition at all, on the beat. Technical and bold looks cut; calm ones rarely do. */
