@@ -14,6 +14,7 @@ every plugin here shows up in `/plugin` → Discover.
 | Plugin | What it does | Install |
 | --- | --- | --- |
 | [video-kit](plugins/video-kit) | Makes launch videos, feature teasers, social clips and what's-new videos for your product from its code or website, for anyone, no video skills needed: `/video-kit:make`, `/video-kit:website`, `/video-kit:changelog` (Mac, Windows, or Linux with Docker) | `/plugin install video-kit@dodera` |
+| [pr-podcast](plugins/pr-podcast) | Turns a pull request, today's commits, a release or a date range into a 3–5 minute two-voice audio episode (what changed, why, what's risky) to hear before the diff, at standup or after time off, recorded free on your computer: `/pr-podcast:make`, `/pr-podcast:standup`, `/pr-podcast:release`, `/pr-podcast:catchup` | `/plugin install pr-podcast@dodera` |
 
 Or add the marketplace and install in one step (Claude Code v2.1.275+):
 

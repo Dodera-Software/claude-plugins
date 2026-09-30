@@ -1,0 +1,14 @@
+{
+  "name": "pr-podcast-engine",
+  "private": true,
+  "type": "module",
+  "description": "Records a two-voice episode from a script, offline, with Kokoro (Apache-2.0) voices.",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "dependencies": {
+    "@breezystack/lamejs": "1.2.7",
+    "@huggingface/transformers": "3.8.1",
+    "kokoro-js": "1.2.1"
+  }
+}

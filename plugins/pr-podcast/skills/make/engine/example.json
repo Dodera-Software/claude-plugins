@@ -1,0 +1,37 @@
+{
+  "title": "Acme pull request 412: checkout retries card payments",
+  "hosts": [
+    { "id": "maya", "name": "Maya", "voice": "af_heart" },
+    { "id": "leo", "name": "Leo", "voice": "am_michael" }
+  ],
+  "lines": [
+    { "chapter": "The short version" },
+    { "host": "maya", "text": "Hi, I'm Maya, and this is Leo. Today: Acme pull request four twelve, by Priya. Checkout now retries a card payment when the bank is slow to answer." },
+    { "host": "leo", "text": "A retry. Near money. What could possibly go wrong?" },
+    { "pause": 0.4 },
+    { "host": "maya", "text": "We'll get there, I promise! First, why: last month, about one checkout in two hundred failed just because the bank took more than ten seconds.", "speed": 1.05 },
+
+    { "chapter": "What changed" },
+    { "host": "maya", "text": "Three places. The payment client gets a retry wrapper: up to three tries, waiting a little longer each time. Checkout calls it instead of the bank directly. And there's a new setting to switch it all off." },
+    { "host": "leo", "text": "Where do I start reading?" },
+    { "host": "maya", "text": "The retry wrapper, in the payments folder. Sixty lines. Everything else is plumbing." },
+
+    { "chapter": "In the real world" },
+    { "host": "leo", "text": "So who actually notices this?" },
+    { "host": "maya", "text": "Picture someone buying concert tickets on a train, on a wobbly connection. Before, the bank was slow, and they got an error, and maybe gave up. Now checkout quietly tries again, and they get their tickets." },
+    { "host": "leo", "text": "One in two hundred. On a busy day, that's a lot of tickets." },
+
+    { "chapter": "What's risky" },
+    { "host": "leo", "text": "Okay, my worry. What if the bank did take the money, and only the answer was slow? Doesn't the retry charge the card twice?" },
+    { "host": "maya", "text": "That's the big one. Each try sends an idempotency key. Think of it as a cloakroom ticket: show it twice, you still get one coat. But the key is built from the cart and the current minute." },
+    { "host": "leo", "text": "Oh no." },
+    { "pause": 0.5 },
+    { "host": "maya", "text": "So a retry that crosses into the next minute gets a new ticket. And a second coat.", "speed": 0.95 },
+    { "host": "leo", "text": "A double charge, at exactly the worst moment. That's a comment on the pull request." },
+    { "host": "maya", "text": "And a smaller one: the tests cover a timeout, but not a timeout followed by a success. Which is precisely the case that bills twice." },
+
+    { "chapter": "Before you approve" },
+    { "host": "leo", "text": "So, before you approve. Build the key from the order, not the clock. Add the test for a slow success. And check that the off switch really skips the retries." },
+    { "host": "maya", "text": "And then? Enjoy the concert." }
+  ]
+}

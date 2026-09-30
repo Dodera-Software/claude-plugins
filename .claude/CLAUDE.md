@@ -186,3 +186,60 @@ bundled ffmpeg (it has no `fps` filter; use `-r`):
 - **Audio** must be redistributable (CC0) and listed in `public/audio/LICENSES.md`. No music: the
   skill asks "sound effects or silent?" and `defineVideo({ sound: false })` mutes every cue.
 - **Remotion** needs a company licence for companies over three people; the READMEs say so.
+
+## pr-podcast
+
+Turns a pull request, commits, a release or a date range into a 3–5 minute two-host audio episode
+(what changed, why, what's risky) with show notes. Its users are developers and their teams, so
+it can talk code, but the same care applies: Claude does every step, one round of clickable
+questions at most, progress in short notes. Everything is free: the voices run locally.
+
+### Layout (inside `plugins/pr-podcast/`)
+
+```
+.claude-plugin/plugin.json, icon.svg   the plugin (bump version, see Releasing) and its directory icon
+skills/make/SKILL.md                  the workflow: version check, voices in the background, quick look,
+                                      brief, gather, understand, script, record, show notes
+skills/standup|release|catchup/       the make workflow with the brief answered, and their own sources
+skills/make/references/episode.md     script format, length budget, hosts, tones, a style in their words,
+                                      structures per audience, writing for the ear
+skills/make/references/risk.md        the risk checklist
+skills/make/engine/                   record.mjs (installs the engine into ~/.cache/pr-podcast, keyed by
+                                      package.json, then runs studio.mjs), studio.mjs (Kokoro voices →
+                                      one MP3 + chapter times as JSON), example.json, package-lock.json
+```
+
+### Working on it
+
+```bash
+cd plugins/pr-podcast/skills/make/engine
+node record.mjs --setup                          # install + voices, prints "ready"
+node record.mjs example.json /tmp/ex.mp3         # the example episode, ~2 min
+node record.mjs example.json /tmp/ex.mp3 --first 3
+```
+
+Test it as a user would with `claude --plugin-dir /path/to/claude-plugins/plugins/pr-podcast` in
+another repo; a non-interactive run (`claude -p … "/pr-podcast:make <sha> as a news bulletin"`)
+covers everything but the questions. CI (`.github/workflows/pr-podcast.yml`) validates and records
+the example on macOS, Windows and Linux, calling no model. Releasing is as for video-kit, with the
+tag `pr-podcast-v<version>`; the README's sample episodes are assets on the first release.
+
+### Hard-won rules
+
+- **Never `process.exit()` after the voices load.** onnxruntime aborts the process ("mutex lock
+  failed"), turning a success into a crash. studio.mjs checks everything (voices, hosts, text)
+  before loading the model and then runs to its end.
+- **Node 20.11 or newer**: kokoro-js reads `import.meta.dirname`.
+- **Kokoro is English only** (American and British voices; `af_heart`, `am_michael`, `bf_emma`,
+  `bm_george`, `af_bella`, `am_fenrir` are the good ones). No free, light model does Romanian or
+  other languages well enough; VoxCPM2 does, but it's a 5 GB download. Don't add languages at that
+  cost without asking.
+- **~160 words a minute** including pauses: the length budget in episode.md depends on it.
+- **The voices follow punctuation**, not instructions: energy comes from the writing, per-line
+  `speed` and `pause` beats. No laughter in scripts; it sounds wrong synthesised. No chimes or
+  music: the owner removed them.
+- **`gh search` covers all of GitHub**: every search in the skills carries `--repo`.
+- **Line numbers in show notes come from the file** (`git show <sha>:<path> | grep -n`), never from
+  counting a diff hunk.
+- **Episodes stay out of git** through `.git/info/exclude`, never the project's `.gitignore`.
+- **Style never bends the truth**: any format ("sports commentary") still says each risk plainly.

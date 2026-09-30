@@ -1,0 +1,24 @@
+{
+  "name": "pr-podcast",
+  "description": "Turn a pull request, today's commits, a release or a date range into a 3–5 minute two-voice audio episode: what changed, why, and what's risky. Listen before opening the diff, play it at standup, or catch up after time off. Recorded on your computer with free, open voices: /pr-podcast:make, /pr-podcast:standup, /pr-podcast:release and /pr-podcast:catchup.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Dodera Software"
+  },
+  "repository": "https://github.com/Dodera-Software/claude-plugins",
+  "license": "MIT",
+  "homepage": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/pr-podcast",
+  "keywords": [
+    "pull request",
+    "code review",
+    "podcast",
+    "audio",
+    "text to speech",
+    "standup",
+    "changelog",
+    "git"
+  ],
+  "documentationUrl": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/pr-podcast#readme",
+  "privacyPolicyUrl": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/pr-podcast#what-leaves-your-computer",
+  "supportUrl": "https://github.com/Dodera-Software/claude-plugins/issues"
+}

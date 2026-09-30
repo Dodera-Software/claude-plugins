@@ -16,6 +16,16 @@
       "source": "./plugins/video-kit",
       "category": "design",
       "homepage": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/video-kit"
+    },
+    {
+      "name": "pr-podcast",
+      "description": "Turn a pull request, today's commits, a release or a date range into a 3–5 minute two-voice audio episode: what changed, why, and what's risky. Listen before opening the diff, play it at standup, or catch up after time off. Recorded on your computer with free, open voices: /pr-podcast:make, /pr-podcast:standup, /pr-podcast:release and /pr-podcast:catchup.",
+      "author": {
+        "name": "Dodera Software"
+      },
+      "source": "./plugins/pr-podcast",
+      "category": "development",
+      "homepage": "https://github.com/Dodera-Software/claude-plugins/tree/main/plugins/pr-podcast"
     }
   ]
 }
