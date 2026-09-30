@@ -1,5 +1,4 @@
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { BrandMark } from '../components/BrandMark'
 import { fitText, lockupSizes, useShape, type Shape } from '../layout'
@@ -60,8 +59,6 @@ export function ScatterToLogo(props: ScatterToLogoProps) {
 
   return (
     <AbsoluteFill>
-      <Sfx cue="whoosh" at={convergeAt + 10} volume={0.3} />
-      <Sfx cue="chime" at={convergeAt + 64} volume={0.4} />
       {props.snippets.slice(0, places.length).map((snippet, index) => {
         const [fx, fy, scale] = places[index]
         const x = fx * width
@@ -80,7 +77,6 @@ export function ScatterToLogo(props: ScatterToLogoProps) {
               filter: `blur(${(1 - enter) * 10}px)`
             }}
           >
-            <Sfx cue="drop" at={8 + index * 12} volume={0.12} />
             <SnippetCard snippet={snippet} />
           </div>
         )

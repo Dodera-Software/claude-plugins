@@ -36,18 +36,17 @@ skills/make/SKILL.md              the workflow Claude follows: brief (questionna
 skills/website/SKILL.md           /video-kit:website: asks for the address, then the make workflow in website mode
 skills/changelog/                 /video-kit:changelog (what's-new videos from recent changes) and release-video.yml, a GitHub Action template
 skills/voiceover/SKILL.md         /video-kit:voiceover: a narrator for an existing video, or a new video with one
-skills/make/references/*.md       details SKILL.md points to: scenes, product-scenes, 3d, style, pacing, audio, voice, brand, recipes, capture, website
+skills/make/references/*.md       details SKILL.md points to: interview (the directed brief), scenes, product-scenes, 3d, style, pacing, audio, voice, brand, recipes, capture, website
 skills/make/template/             the studio copied into a product repo as video/
-  src/kit/                        shared: motion helpers, brand context, components, scenes, transitions, sound cues, defineVideo
+  src/kit/                        shared: motion helpers, brand context, components, scenes, transitions, defineVideo
   src/kit/three/                  depth: cameraAt, Space/Place (DOM in 3D), Stage3D/Logo3D (three.js)
   src/brands/acme/                example brand (tokens, logo, Brand object)
   src/videos/acme-teaser/         example video built only from kit scenes
   render.sh                       every render goes through this: hands the command to scripts/render.mjs
   scripts/                        render.mjs (Docker, on macOS, Windows and Linux), finish.mjs (previews, glitch scan),
                                   timeline.mjs, capture.mjs (screenshots and recordings), clip.mjs (people's own
-                                  recordings), site.mjs, sfx-peaks.py
+                                  recordings), site.mjs
   fonts.conf                      makes Inter answer for system fonts in captures
-  public/audio/sfx/               CC0 sounds (Kenney) + LICENSES.md
   voice/                          the voice engine (Kokoro, kokoro-js), installed apart from the video app by scripts/voice.mjs
 ```
 
@@ -68,7 +67,7 @@ npm run studio                           # live preview
   `readingFrames()`. Never hard-code a length that holds text.
 - Kit code reads colours through `useBrand()`, never hex values (except third-party marks in
   `ToolIcon`).
-- `references/scenes.md`, `product-scenes.md`, `3d.md` and `audio.md` describe the kit's API. Change them in
+- `references/scenes.md`, `product-scenes.md`, `3d.md` and `voice.md` describe the kit's API. Change them in
   the same commit as the code, or Claude will use the kit wrong in users' repos.
 - Kit scenes follow the look (`useLook()`, `useBrand()` colours adapted by `lookColors`). After a
   kit change, look at stills of the changed scenes in all four looks and in wide, square and tall
@@ -189,9 +188,27 @@ bundled ffmpeg (it has no `fps` filter; use `-r`):
   installs `voice/` once into `~/.cache/video-kit` (keyed by its package.json) and reuses
   pr-podcast's downloaded voices when they're there. kokoro-js's voices are English only (28,
   American and British); the other languages are only in the Python Kokoro. The voice is recorded
-  first and scenes grow to fit their line (`withVoice` in `video.tsx`); effects duck to 40% under it.
-- **Audio** must be redistributable (CC0) and listed in `public/audio/LICENSES.md`. No music: the
-  skill asks "sound effects or silent?" and `defineVideo({ sound: false })` mutes every cue.
+  first and scenes grow to fit their line (`withVoice` in `video.tsx`).
+- **Polish is rationed.** `autoZoom` picks moments (typing, clicks on small targets), merges steps
+  under a second apart, and rests 2.5 s after zooming out; depth of field is off unless a `Space`
+  asks for it (the fly-through uses 0.5); `MotionBlur` wraps only fast camera moves (each blurred
+  frame costs 6 renders); `autoHighlights` outlines the same moments, at most one every 4 s.
+  style.md, "Restraint with effects", says the same for Claude: the effects look expensive only
+  when they're rare.
+- **Transitions ease.** Remotion's own presentations (slide, wipe, fade) run at an even speed;
+  `SceneTransition.eased` gives them an ease in and out through the timing, and they run 30–40
+  frames. The kit's own (flood, grow, dip, zoom) ease inside themselves, so they aren't eased twice.
+  "Transitions should be smoother" was the first note from the team on early cuts.
+- **The pointer is 1.5× and rings on clicks**, in recordings (drawn into the page by capture.mjs)
+  and in `Cursor`: at the system's size it was lost once the screen was scaled into the frame.
+- **`MotionBlur` never wraps WebGL.** Each sample is another copy of its children; around a
+  `Stage3D` or a `ThreeCanvas` that's six 3D canvases per frame, and at 4K a frame took longer than
+  the 33 s Remotion allows. It's for `Space` (the fly-through) only.
+- **The quality bar is in the skill**, not only in reviews: style.md's "never AI slop" checklist
+  runs before stills are shown, and the directed interview (references/interview.md) exists
+  because the person's vision, not the tool, is what makes a video good.
+- **No sound effects, no music.** The kit shipped CC0 clicks and pops until 0.12; the owner removed
+  them ("they sound cheap and don't help"). A video is silent or narrated; don't add sounds back.
 - **Remotion** needs a company licence for companies over three people; the READMEs say so.
 
 ## pr-podcast

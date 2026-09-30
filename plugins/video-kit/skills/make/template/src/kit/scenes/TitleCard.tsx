@@ -1,5 +1,4 @@
 import { AbsoluteFill } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { ChapterTitle } from '../components/ChapterTitle'
 import { useShape } from '../layout'
 import { useLook } from '../look'
@@ -24,7 +23,6 @@ export function TitleCard(props: TitleCardProps) {
   const size = Math.round((shape === 'wide' ? 96 : shape === 'tall' ? 84 : 72) * type.scale)
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: align === 'center' ? 'center' : 'stretch', padding: shape === 'wide' ? '0 180px' : `0 ${pad}px` }}>
-      <Sfx cue="pop" at={6} volume={0.25} />
       <ChapterTitle {...props} start={6} size={size} style={{ maxWidth: shape === 'wide' ? 1500 : width - 2 * pad }} />
     </AbsoluteFill>
   )

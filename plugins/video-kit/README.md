@@ -24,7 +24,7 @@ needed: answer a few questions, approve a plan, and get a finished 4K video.
 ```
 
 Claude asks what kind of video (launch film, feature teaser, social clip), where it will be shown,
-whether it's narrated, has sound effects or is silent (silent unless you ask), which feature or story, how it should look, which
+whether it's narrated or silent (silent unless you ask), which feature or story, how it should look, which
 languages, and whether to show the product recreated from its code, as the real app (screenshots and
 short recordings) or through screen recordings you made. Then it
 reads how your product works, comes up with an idea for this video, shows you the plan and a few
@@ -41,6 +41,12 @@ look alike.
 for something cinematic (or let Claude choose it) and you get a film instead: one continuous camera
 journey through your product's screens, words appearing over the picture like subtitles, and
 your logo as a solid 3D object at the end.
+
+**Directed or quick.** For anything public, choose "Directed": Claude interviews you for about ten
+minutes about your audience, your one message, videos you'd like it to feel like (how they start,
+how they end), the moments you want and what to avoid, then writes it down for you to confirm.
+The video follows your vision, not a template. "Quick" is a few clicks, for internal or social
+clips.
 
 **Describe it yourself if you like:** "open on our logo drawing itself, then show the three
 dashboards side by side" and it builds exactly that.
@@ -83,6 +89,9 @@ You get:
 - a cover image and a YouTube thumbnail; every video opens on a cover, so Slack and LinkedIn show
   a proper preview,
 - one video per language you asked for.
+
+While it renders, Claude tells you how far along it is and about how long is left. Want a draft
+first? Ask for "just the quick one": 1080p only, in about a quarter of the time.
 
 Give notes like a director ("this part is too fast", "make the ending punchier") and it redoes them.
 
@@ -129,6 +138,9 @@ app instead:
   (typing, a card moving, a list filling up), and closes it again. It reads your project to learn how.
 - If pages need a login, you give it a **demo account**, never a real one.
 - **Everything on screen ends up in the video**, so only example data should be visible.
+- Recordings are edited like a screen-recording app would: the camera moves in on what's being
+  typed or clicked, an outline in your brand colour marks it, the pointer is large enough to
+  follow, and the screen can sit in a laptop. Each used sparingly, so it looks crafted.
 
 You can also bring screen recordings you made yourself (on a Mac, Windows or your phone): put them
 in the project or tell Claude where they are, and it builds the video around them.
@@ -195,7 +207,6 @@ npm run studio                  # or preview it live with a timeline
 ## Licences
 
 - This plugin: MIT.
-- Sound effects: CC0 (Kenney, "Interface Sounds"). No music is included.
 - Voices: Kokoro (Apache 2.0), free for commercial videos.
 - **Remotion** has its own licence: free for individuals and companies of up to three people;
   larger companies need a [Remotion company licence](https://www.remotion.pro/license) to render.

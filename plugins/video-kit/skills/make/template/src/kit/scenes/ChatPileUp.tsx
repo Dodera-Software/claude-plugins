@@ -1,5 +1,4 @@
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { fitText, useShape } from '../layout'
 import { PersonAvatar } from '../components/PersonAvatar'
@@ -65,7 +64,6 @@ export function ChatPileUp(props: ChatPileUpProps) {
                 transform: `translateY(${(1 - pop) * 30}px) scale(${mix(0.92, 1, pop)})`, transformOrigin: '0 50%'
               }}
             >
-              <Sfx cue={last ? 'punch' : index % 2 ? 'popAlt' : 'pop'} at={at} volume={last ? 0.4 : 0.3} />
               <PersonAvatar person={message.person} size={avatar} />
               <div style={{ minWidth: 0, padding: wide ? '14px 24px 16px' : '12px 20px 14px', borderRadius: '6px 24px 24px 24px', background: colors.sheet, boxShadow: shadow.card, border: `1px solid ${colors.border}` }}>
                 <div style={{ fontSize: wide ? 17 : 16, fontWeight: 600, color: colors.toned, marginBottom: 4 }}>{message.person.name}</div>

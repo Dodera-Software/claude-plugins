@@ -14,6 +14,11 @@ import { easeInOut, mix } from './motion'
 export interface SceneTransition {
   presentation: TransitionPresentation<Record<string, unknown>>
   frames: number
+  /**
+   * Remotion's own presentations (slide, wipe, fade) move at an even speed; these are given an
+   * ease in and out, so they start and land softly. The kit's own ease inside themselves.
+   */
+  eased?: boolean
 }
 
 type Point = { x: number, y: number }
@@ -88,8 +93,24 @@ function Dip({ children, presentationDirection, presentationProgress }: Transiti
 }
 
 /** TransitionSeries takes any presentation; each keeps its own props type up to here. */
-function transition<P extends Record<string, unknown>>(presentation: TransitionPresentation<P>, frames: number): SceneTransition {
-  return { presentation: presentation as unknown as SceneTransition['presentation'], frames }
+function transition<P extends Record<string, unknown>>(presentation: TransitionPresentation<P>, frames: number, eased = false): SceneTransition {
+  return { presentation: presentation as unknown as SceneTransition['presentation'], frames, eased }
+}
+
+type ZoomProps = { direction: 'in' | 'out' }
+
+/**
+ * Through the picture: the outgoing scene grows toward the viewer and fades while the next one
+ * settles in from a little smaller ('in'), or the reverse ('out'). Both move on one eased curve, so
+ * the change reads as a single camera move, not two scenes swapping.
+ */
+function Zoom({ children, presentationDirection, presentationProgress, passedProps }: TransitionPresentationComponentProps<ZoomProps>) {
+  const t = easeInOut(presentationProgress)
+  const sign = passedProps.direction === 'in' ? 1 : -1
+  const exiting = presentationDirection === 'exiting'
+  const scale = exiting ? 1 + sign * 0.14 * t : 1 - sign * 0.08 * (1 - t)
+  const opacity = exiting ? 1 - easeInOut(clamp01(presentationProgress / 0.7)) : easeInOut(clamp01((presentationProgress - 0.2) / 0.8))
+  return <AbsoluteFill style={{ opacity, transform: `scale(${scale})` }}>{children}</AbsoluteFill>
 }
 
 /** A colour bursts out of a point, clears the farthest corner, and the next scene follows it out. */
@@ -106,13 +127,22 @@ export function grow(from: GrowProps, frames = 36): SceneTransition {
 }
 
 /** Pages push: for two scenes of the same kind, side by side in the story. */
-export function push(direction: SlideDirection = 'from-right', frames = 30): SceneTransition {
-  return transition(slide({ direction }), frames)
+export function push(direction: SlideDirection = 'from-right', frames = 40): SceneTransition {
+  return transition(slide({ direction }), frames, true)
+}
+
+/**
+ * The camera moves through: `'in'` goes deeper (the next scene is a closer look: a feature after
+ * the overview, a detail after the screen), `'out'` steps back (the big picture after a detail).
+ * Smooth in every look; the calm way between two full pictures that belong together.
+ */
+export function zoom(direction: 'in' | 'out' = 'in', frames = 40): SceneTransition {
+  return transition({ component: Zoom, props: { direction } }, frames)
 }
 
 /** A hard edge sweeps across and leaves the next scene behind it: bold, graphic. */
-export function wipe(direction: WipeDirection = 'from-left', frames = 24): SceneTransition {
-  return transition(remotionWipe({ direction }), frames)
+export function wipe(direction: WipeDirection = 'from-left', frames = 32): SceneTransition {
+  return transition(remotionWipe({ direction }), frames, true)
 }
 
 /** A punchy zoom cut: the next beat hits. For bold and playful looks. No flash: a one-frame strobe reads as a glitch. */
@@ -145,6 +175,6 @@ export function dip(frames = 40): SceneTransition {
 }
 
 /** The fallback. Use it only when nothing on screen can become the next scene, and both are sparse; between two busy pictures, `dip`. */
-export function crossfade(frames = 20): SceneTransition {
-  return transition(fade(), frames)
+export function crossfade(frames = 30): SceneTransition {
+  return transition(fade(), frames, true)
 }

@@ -51,6 +51,27 @@ picture.
 **Gotchas:** a line per stop, not a paragraph, or the camera waits too long; cut or grow between
 shots, never slide; check the stops in every shape, since the camera frames each screen for it.
 
+## Feature demo (10–25 s, landscape or square)
+
+The short "here's how it works" clip teams post for every feature: one real flow in the real app,
+edited like a pro screen recording.
+
+**Find out:** the feature, the two or three steps that show it (type this, click that, see the
+result), the one sentence of what it's for, a demo account with data that makes the result look
+good.
+
+**Direction:** no tour, no intro. A line of what it does, the flow itself, the result held.
+
+| Time | Beat | Ways to fill it |
+| --- | --- | --- |
+| 0–2 s | What it does | the cover's title, or a `Caption` over the first frame of the recording |
+| 2–18 s | The flow | one recording (capture.md) in a browser window or laptop, `camera={autoZoom(film, { at })}`: in on the typing, out for the result; a `Caption` per step if it helps |
+| 18–25 s | The result, then where | hold on the result; `EndCard` or the product's name and address |
+
+**Gotchas:** film the moment only (3–10 s) and trim slow loads with `from` and `rate`; the demo
+data must make the result impressive (a filter that finds four rows, not zero); two zoom moves
+are plenty.
+
 ## Feature teaser (15–30 s, landscape or portrait)
 
 **Find out:** the feature, the question or task it answers, where it lives (in the app, in Slack,
@@ -80,7 +101,7 @@ so it loops.
 
 **Build:** one new scene in the video's folder; `spring()` for every settle, and a value that
 changes target several times is the sum of one spring per change so it stays a pure function of
-the frame; a sound cue on each change.
+the frame.
 
 **Gotchas:** text that swaps inside a morphing container needs its own timing or it overlaps;
 match the cursor's position and speed at the last and first frame or the loop stutters.

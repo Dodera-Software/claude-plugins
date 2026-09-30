@@ -1,5 +1,4 @@
 import { AbsoluteFill, useCurrentFrame } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { Eyebrow } from '../components/Eyebrow'
 import { RevealWords } from '../components/RevealWords'
@@ -60,7 +59,6 @@ export function WordSwap(props: WordSwapProps) {
                 transform: `translateY(${(1 - inAmount) * 60 - outAmount * 60}%)`
               }}
             >
-              <Sfx cue={index % 2 ? 'popAlt' : 'pop'} at={at} volume={0.2} />
               {word}
             </div>
           )

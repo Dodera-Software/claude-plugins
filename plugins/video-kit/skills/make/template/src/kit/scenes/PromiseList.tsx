@@ -1,6 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
 import { AbsoluteFill, useCurrentFrame } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { FORMATS, padFor, shapeOf, useShape, type Shape } from '../layout'
 import { inkOn, lookFor, useLook, type LookName } from '../look'
@@ -83,7 +82,6 @@ export function PromiseList({ items }: PromiseListProps) {
               filter: motion.blur ? `blur(${Math.max(0, 1 - shown) * 6}px)` : undefined
             }}
           >
-            <Sfx cue={index % 2 ? 'tickAlt' : 'tick'} at={at} volume={0.25} />
             <div style={{ flexShrink: 0, width: size.icon, height: size.icon, borderRadius: size.radius * round, background: lead ? colors.accent : colors.accentSoft, display: 'grid', placeItems: 'center' }}>
               <Icon size={size.icon * 0.45} color={lead ? inkOn(colors.accent) : colors.accent} strokeWidth={1.8} />
             </div>

@@ -1,5 +1,4 @@
 import { useCurrentFrame } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { inkOn, useLook } from '../look'
 
@@ -54,7 +53,6 @@ export function TerminalWindow({ lines, title, width, start = 0 }: { lines: Term
             const typed = Math.min(line.command.length, Math.floor((frame - at[index]) / PER_CHAR))
             return (
               <div key={index} style={{ whiteSpace: 'pre-wrap' }}>
-                <Sfx cue="send" at={at[index] + line.command.length * PER_CHAR} volume={0.12} />
                 <span style={{ color: colors.accent }}>$ </span>
                 {line.command.slice(0, typed)}
               </div>

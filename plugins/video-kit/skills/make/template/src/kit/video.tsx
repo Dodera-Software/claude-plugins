@@ -1,12 +1,11 @@
 import { linearTiming, TransitionSeries } from '@remotion/transitions'
 import type { ComponentType } from 'react'
 import { AbsoluteFill, Audio, Sequence, staticFile } from 'remotion'
-import { SfxLevel, SoundContext } from './audio/Sfx'
 import { BrandProvider, type Brand } from './brand'
 import { Backdrop } from './components/Backdrop'
 import { FORMATS } from './layout'
 import { LookProvider, lookColors, type LookName } from './look'
-import { FPS } from './motion'
+import { easeInOut, FPS } from './motion'
 import { Cover, type CoverProps } from './scenes/Cover'
 import { crossfade, flood, type SceneTransition } from './transitions'
 
@@ -50,8 +49,6 @@ interface VideoSpec {
    * colours, type, motion and what sits behind the scenes (src/kit/look.tsx).
    */
   look?: LookName
-  /** Silent (default), or sound effects when the person asked for them. Scenes keep their cues either way. */
-  sound?: boolean
   /**
    * The composed opening frame that apps use as the video's preview: logo, name and `title`,
    * shown on its own for `frames` (default 45, ¾ s) before the first scene bursts out of it. Only
@@ -60,7 +57,7 @@ interface VideoSpec {
   cover?: (CoverProps & { frames?: number }) | false
   /**
    * The narration (`render.sh voice <folder>`, then import its voice.json): scenes say which line
-   * they carry with `voice`. Sound effects play softer under it.
+   * they carry with `voice`. Without it the video is silent.
    */
   voiceover?: VoiceTrack
 }
@@ -77,11 +74,11 @@ export interface VideoDefinition {
 }
 
 /** One video: its brand, and its scenes in order with how each one grows out of the last. */
-export function defineVideo({ id, brand: base, format = 'landscape', look = 'editorial', scenes: givenScenes, sound = false, cover = {}, voiceover }: VideoSpec): VideoDefinition {
+export function defineVideo({ id, brand: base, format = 'landscape', look = 'editorial', scenes: givenScenes, cover = {}, voiceover }: VideoSpec): VideoDefinition {
   const { width, height } = FORMATS[format]
   const brand = lookColors(base, look)
   // A scene's last line must end before the next scene starts coming in over it.
-  const ownScenes = givenScenes.map((scene, index) => withVoice(scene, index, voiceover, givenScenes[index + 1]?.enter?.frames ?? (givenScenes[index + 1] ? 20 : 0)))
+  const ownScenes = givenScenes.map((scene, index) => withVoice(scene, index, voiceover, givenScenes[index + 1]?.enter?.frames ?? (givenScenes[index + 1] ? crossfade().frames : 0)))
   const opening = cover === false ? undefined : (ownScenes[0].enter ?? flood({ x: width / 2, y: height / 2 }))
   const scenes: Scene[] = cover === false || !opening
     ? ownScenes
@@ -110,14 +107,12 @@ export function defineVideo({ id, brand: base, format = 'landscape', look = 'edi
     return (
       <BrandProvider brand={brand}>
         <LookProvider look={look}>
-          <SfxLevel.Provider value={voiceover ? 0.4 : 1}>
-          <SoundContext.Provider value={sound}>
             <AbsoluteFill style={{ background: brand.colors.canvas, fontFamily: brand.fontFamily }}>
               <TransitionSeries>
                 {scenes.flatMap(({ component: SceneComponent, frames, enter }, index) => {
                   const transition = enter ?? crossfade()
                   return [
-                    index > 0 && <TransitionSeries.Transition key={`enter-${index}`} presentation={transition.presentation} timing={linearTiming({ durationInFrames: transition.frames })} />,
+                    index > 0 && <TransitionSeries.Transition key={`enter-${index}`} presentation={transition.presentation} timing={linearTiming({ durationInFrames: transition.frames, easing: transition.eased ? easeInOut : undefined })} />,
                     <TransitionSeries.Sequence key={`scene-${index}`} durationInFrames={frames}>
                       <Backdrop />
                       <SceneComponent />
@@ -127,8 +122,6 @@ export function defineVideo({ id, brand: base, format = 'landscape', look = 'edi
                 }).filter(Boolean)}
               </TransitionSeries>
             </AbsoluteFill>
-          </SoundContext.Provider>
-          </SfxLevel.Provider>
         </LookProvider>
       </BrandProvider>
     )
@@ -158,7 +151,7 @@ function withVoice(scene: Scene, index: number, voiceover: VoiceTrack | undefine
   }
   const cues = (Array.isArray(scene.voice) ? scene.voice : [scene.voice]).map(cue => (typeof cue === 'string' ? { line: cue, at: undefined } : cue))
   // Once the scene has arrived: after its entrance (the first scene enters out of the cover).
-  let next = (scene.enter?.frames ?? (index === 0 ? 36 : 20)) + 6
+  let next = (scene.enter?.frames ?? (index === 0 ? 36 : crossfade().frames)) + 6
   const voiceLines = cues.map(({ line, at }) => {
     const recorded = voiceover?.lines[line]
     if (!recorded) {

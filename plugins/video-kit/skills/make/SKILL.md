@@ -54,6 +54,18 @@ Ask with the multiple-choice question tool (AskUserQuestion) so the person click
 every question gets an "Other" for their own answer. If that tool isn't available, ask the same
 questions in one short message.
 
+**First, how involved they want to be** (skip it when the request already describes the video in
+detail). One question:
+
+| Header | Question | Options |
+| --- | --- | --- |
+| Approach | How should we make it? | Directed (recommended for anything public): I interview you about your vision, references and the moments you want, about 10 minutes, and the video follows it · Quick: a few clicks and I direct the rest, good for internal or quick social clips |
+
+**Directed:** run the interview in references/interview.md instead of the rounds below; it covers
+everything they ask, and more.
+
+**Quick:** the rounds below.
+
 **When the request describes the video** (`$ARGUMENTS` or the message says what it's for): use it,
 and ask only what it leaves open, in a single round. Ask about the style, look and sound if they
 weren't said, and use any scenes or ideas it describes as the plan.
@@ -64,10 +76,10 @@ without having to know to ask:
 
 | Header | Question | Options (label: description) |
 | --- | --- | --- |
-| Video | What kind of video? | Launch film: 45–75 s, the whole product · Feature teaser: 15–30 s, one feature · Social clip: 10–20 s, one moment, loops |
+| Video | What kind of video? | Launch film: 45–75 s, the whole product · Feature teaser: 15–30 s, one feature · Feature demo: 10–25 s, one feature working in the real app · Social clip: 10–20 s, one moment, loops |
 | Format | Where will it be shown? (pick all that apply) | Website or YouTube: wide (16:9) · Reels, Shorts or TikTok: tall (9:16) · LinkedIn or X: square |
 | Style | What style? | Let me choose (recommended): I pick what suits the product and say why in the plan · Scene by scene: clear chapters, each with its own point · Cinematic, with 3D: one continuous camera journey through your product, 3D moments, words over the picture |
-| Sound | Voice, sound effects, or silent? | Silent (recommended): no sound at all · Narrator voice: a voice tells the story, recorded on this computer with free voices, English only · Sound effects: soft clicks and pops on what happens (never music) |
+| Sound | A narrator, or silent? | Silent (recommended): no sound at all, made to be watched muted · Narrator voice: a voice tells the story, recorded on this computer with free voices, English only |
 
 **No code here** (the folder isn't a software project, or the person says they only have the
 website): this is website mode (references/website.md), the same as `/video-kit:website`. Ask for
@@ -145,8 +157,9 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
 - **An older studio:** if `video/` came from an earlier version (it lacks files the template has,
   like `src/kit/three/` or `scripts/site.mjs`), bring it up to date first: copy from the template
   `src/kit/`, `scripts/`, `render.sh`, `Dockerfile`, `fonts.conf`, `package.json`, `tsconfig.json`,
-  `package-lock.json`, `README.md` and `public/audio/`, never `src/videos/`, `src/brands/` or the
-  rest of `public/`. Then `npm install` and `npm run typecheck`; if an existing video no longer
+  `package-lock.json` and `README.md`, never `src/videos/`, `src/brands/` or `public/`. Remove
+  `src/kit/audio/` and `public/audio/` if they're there, and any `<Sfx>` or `sound:` in their own videos (the kit
+  has no sound effects any more). Then `npm install` and `npm run typecheck`; if an existing video no longer
   compiles, fix it to the new kit API. Say in one line that you updated the video tools.
 
 ## 3. Understand the product (the most important step)
@@ -168,7 +181,7 @@ it to a new hire. For a large project, send an Explore agent per area.
   reads its look, logo, wording and screenshots (references/website.md). Claims come only from the
   site's own words.
 
-Write `video/src/videos/<slug>/BRIEF.md`: the one-line promise, who it's for, the 3–5 things the
+Write `video/src/videos/<slug>/BRIEF.md` (next to VISION.md when there was an interview): the one-line promise, who it's for, the 3–5 things the
 video shows with the file each claim comes from, the tokens, fonts and logo, the demo names, and,
 for captures, how the app runs. A claim you can't point to in the code doesn't go in the video.
 Create the brand if it doesn't exist: references/brand.md.
@@ -176,7 +189,9 @@ Create the brand if it doesn't exist: references/brand.md.
 ## 4. Storyboard, then stop for approval
 
 Make this video its own (references/style.md, "Every video is its own"): your concept for it, the
-look, the signature moment, a varied structure. Then show the plan the way a person reads it:
+look, the signature moment, a varied structure. Hold it to the quality bar (style.md, "The
+quality bar: never AI slop") before showing anything. After an interview, every scene traces back to
+VISION.md; say where you went beyond it. Then show the plan the way a person reads it:
 
 - **The idea**, one line ("The whole film happens inside Acme's terminal: every feature is a
   command"), and one different idea as the alternative, one line.
@@ -193,7 +208,7 @@ Follow references/pacing.md. Wait for a yes or changes.
 ## 5. Build
 
 - `video/src/videos/<slug>/`: `content.ts` holds every word; `index.tsx` calls
-  `defineVideo({ id, brand, format, look, cover: { title }, sound, scenes })`; the product's own
+  `defineVideo({ id, brand, format, look, cover: { title }, scenes })`; the product's own
   scenes, including the original scene for your idea, go in `scenes/` and `components/`. Register
   it in `video/src/videos/index.ts`.
 - **Several shapes:** `inFormats(['landscape', 'square'], format => defineVideo({ …, format }))`
@@ -221,8 +236,8 @@ Follow references/pacing.md. Wait for a yes or changes.
 - Transitions: every scene after the first says how it arrives, in the look's own set
   (references/style.md, "Looks"): growing out of something visible in the previous scene where it
   can, varied from scene to scene. Crossfade only when nothing else fits.
-- Sound: silent unless they chose sound effects; then `sound: true` and quiet `<Sfx>` cues on things
-  that happen (references/audio.md). Never music.
+- Sound: silent unless they chose a narrator. No sound effects and no music: the kit has none, on
+  purpose (they sounded cheap).
 - Narrator (references/voice.md): once the storyboard is approved, let them hear the first line in
   two or three voices (`render.sh voice-sample`) and choose; write `voice.json`, record it
   (`render.sh voice <slug>`), import its manifest as `voiceover`, and give each scene its `voice`
@@ -233,7 +248,8 @@ Follow references/pacing.md. Wait for a yes or changes.
 ## 6. Check it, then show it
 
 `npm run timeline` prints where each scene starts. `./render.sh <VideoId> still <frame> …` renders
-single images (the script starts Docker Desktop if needed and leaves it open). Look at each scene
+single images (the script starts Docker Desktop if needed and leaves it open). Go through the
+quality bar (references/style.md) on them. Look at each scene
 at its fullest moment and the middle of every transition. Fix text that overlaps or wraps with one
 word alone, headings over three lines, empty areas, anything cut at the edge, anything off-brand, any
 claim not in the brief. "Too fast to read" is what viewers complain about; slow is fixable.
@@ -248,10 +264,18 @@ video, which stills can't show.
 
 `./render.sh <VideoId>` (once per video id: each language and shape) makes the full-resolution and
 1080p videos, a poster and a thumbnail in the video's own shape, and checks every frame for
-glitches; fix any it reports. Then:
+glitches; fix any it reports. `./render.sh <VideoId> quick` makes only the 1080p one, in about a
+quarter of the time (a 3D film: minutes instead of most of an hour); use it only when they ask for
+a quick one.
+
+**While it renders, keep them posted.** Run it in the background and, about every 30 seconds, read
+`out/progress.txt` (one line: how far the whole video is, about how long is left, what it's
+drawing) and pass it on in one short line: "Rendering: 40%, about 8 minutes left." Say when it
+moves to the next part ("the 4K version is done, now the 1080p one"). Never go quiet on a render
+that takes more than a minute. Then:
 
 - Open the video for them and show it in its folder: `./render.sh show out/<slug>-4k.mp4` (on any
-  system).
+  system; `-1080p.mp4` after a quick render).
 - Tell them in plain words: how long it is, which file is for what (wide: "the 4K one for the
   website and YouTube, the 1080p one for LinkedIn, Slack and email; the thumbnail is the picture
   YouTube asks for"; square and tall: "the 1080p one is what you upload"), and anything you
@@ -265,6 +289,6 @@ glitches; fix any it reports. Then:
 - Impersonate another product's UI beyond a simplified, recognisable mockup of an integration the
   product really has.
 - Put real customer data on screen. Demo data only.
-- Add audio the kit doesn't ship without a licence that allows it in the repo.
+- Add sound effects or music. A narrator is the only sound.
 - Leave anything running that you started for the video (the product's dev server, its containers).
   Docker Desktop itself stays open: never quit it.

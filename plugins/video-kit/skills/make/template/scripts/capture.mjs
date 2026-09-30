@@ -59,8 +59,9 @@ function value(raw) {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-// The pointer drawn into the page while filming: the macOS arrow, following the real mouse events,
-// pressing on mousedown. It survives page loads through sessionStorage. A 1-pixel dot flickers
+// The pointer drawn into the page while filming: the macOS arrow at 1.5× its size (at the size
+// the system draws it, it's lost once the video is scaled down), following the real mouse events,
+// pressing on mousedown with a ring spreading from its tip, so every click is seen. It survives page loads through sessionStorage. A 1-pixel dot flickers
 // invisibly in the corner, so the page repaints every frame and the film keeps running through
 // moments where nothing moves.
 const POINTER = `(() => {
@@ -68,17 +69,29 @@ const POINTER = `(() => {
   const start = () => {
     const at = JSON.parse(sessionStorage.getItem('video-kit-pointer-at') || '[-40,-40]')
     const pointer = document.createElement('div')
-    pointer.innerHTML = '<svg width="24" height="32" viewBox="0 0 24 32"><path d="M1 1v25l6.5-6.2 4.2 9.8 4-1.7-4.1-9.6H21z" fill="#1F1F1F" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>'
+    pointer.innerHTML = '<svg width="36" height="48" viewBox="0 0 24 32"><path d="M1 1v25l6.5-6.2 4.2 9.8 4-1.7-4.1-9.6H21z" fill="#1F1F1F" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>'
     pointer.style.cssText = 'position:fixed;left:0;top:0;z-index:2147483647;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))'
     // The press shrinks the arrow around its tip. Only the arrow: scaling the element that carries
     // the position would pull the pointer toward the corner of the screen.
     const arrow = pointer.firstChild
-    arrow.style.cssText = 'display:block;transform-origin:1px 1px;transition:transform .08s'
+    arrow.style.cssText = 'display:block;position:relative;transform-origin:1.5px 1.5px;transition:transform .08s'
+    const ring = document.createElement('div')
+    ring.style.cssText = 'position:absolute;left:-22px;top:-22px;width:44px;height:44px;border-radius:50%;border:3px solid rgba(20,20,20,.45);box-shadow:0 0 0 1px rgba(255,255,255,.6);opacity:0;transform:scale(.3)'
+    pointer.insertBefore(ring, arrow)
     const place = (x, y) => { pointer.style.transform = 'translate(' + x + 'px,' + y + 'px)'; sessionStorage.setItem('video-kit-pointer-at', JSON.stringify([x, y])) }
     place(at[0], at[1])
     document.documentElement.appendChild(pointer)
     addEventListener('mousemove', event => place(event.clientX, event.clientY), true)
-    addEventListener('mousedown', () => { arrow.style.transform = 'scale(0.86)' }, true)
+    addEventListener('mousedown', () => {
+      arrow.style.transform = 'scale(0.86)'
+      ring.style.transition = 'none'
+      ring.style.opacity = '1'
+      ring.style.transform = 'scale(.3)'
+      ring.getBoundingClientRect()
+      ring.style.transition = 'transform .45s cubic-bezier(.16,1,.3,1), opacity .45s ease-out'
+      ring.style.opacity = '0'
+      ring.style.transform = 'scale(1)'
+    }, true)
     addEventListener('mouseup', () => { arrow.style.transform = 'none' }, true)
     const tick = document.createElement('div')
     tick.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;z-index:2147483646;pointer-events:none'
@@ -231,6 +244,12 @@ async function glide(page, selector) {
   const box = await target.boundingBox()
   const to = [box.x + box.width / 2, box.y + box.height / 2]
   const from = filming.mouse
+  // Where the step happens, as fractions of the screen: the video's camera can move toward it.
+  const mark = filming.marks.at(-1)
+  if (mark && !mark.box) {
+    const [w, h] = [plan.viewport?.width ?? 1440, plan.viewport?.height ?? 900]
+    mark.box = { x: round(box.x / w), y: round(box.y / h), width: round(box.width / w), height: round(box.height / h) }
+  }
   // Eased in and out over about half a second, a step per frame, like a hand on a trackpad.
   const steps = 28
   for (let i = 1; i <= steps; i++) {
@@ -317,6 +336,9 @@ async function stopFilm(page) {
     const shift = first - began / 1000
     for (const mark of marks) {
       mark.t = Number(Math.max(0, mark.t - shift).toFixed(2))
+      if (mark.end !== undefined) {
+        mark.end = Number(Math.max(0, mark.end - shift).toFixed(2))
+      }
     }
   } else {
     input = ['-framerate', '60', '-i', join(dir, '%05d.jpg'), '-vf', 'format=yuv420p']
@@ -339,11 +361,31 @@ async function stopFilm(page) {
   console.log(`  ${mp4} (${info.duration} s, ${mode})`)
 }
 
+const round = value => Number(value.toFixed(3))
+
+/** Seconds into the current film, live or frame by frame. */
+function now() {
+  return filming.mode === 'live' ? Date.now() / 1000 - filming.began / 1000 : filmTime()
+}
+
 async function run(page, step) {
-  const url = step.goto && new URL(step.goto, plan.baseUrl).href
-  if (filming && !step.record && !step.stop && !step.shot) {
-    filming.marks.push({ t: filming.mode === 'live' ? Date.now() / 1000 - filming.began / 1000 : filmTime(), step: JSON.stringify(step) })
+  // While filming, every step is noted: what it was, when it started and ended, and (for clicks,
+  // typing and hovers) where on the screen it happened.
+  const mark = filming && !step.record && !step.stop && !step.shot
+    ? { t: now(), kind: ['click', 'type', 'hover', 'scroll', 'press', 'goto', 'wait', 'waitFor'].find(key => step[key] !== undefined) ?? 'step', step: JSON.stringify(step) }
+    : null
+  if (mark) {
+    filming.marks.push(mark)
   }
+  await perform(page, step)
+  if (mark && filming) {
+    mark.end = filming.mode === 'live' ? now() : filmTime()
+  }
+}
+
+/** Does one step of the plan. */
+async function perform(page, step) {
+  const url = step.goto && new URL(step.goto, plan.baseUrl).href
   if (step.record) {
     await stopFilm(page)
     await startFilm(page, step.record, step.filming ?? plan.filming ?? 'frames')
@@ -418,8 +460,10 @@ async function run(page, step) {
     await page.keyboard.press(step.press)
   } else if (step.hover) {
     await page.locator(step.hover).setTimeout(TIMEOUT).hover()
+  } else if (typeof step.scroll === 'string') {
+    await (await page.locator(step.scroll).setTimeout(TIMEOUT).waitHandle()).evaluate(element => element.scrollIntoView({ block: 'start' }))
   } else if (step.scroll) {
-    await page.evaluate(y => window.scrollBy(0, y), typeof step.scroll === 'number' ? step.scroll : 0)
+    await page.evaluate(y => window.scrollBy(0, y), step.scroll)
   } else if (step.wait) {
     await new Promise(resolve => setTimeout(resolve, step.wait))
   } else if (step.waitFor) {

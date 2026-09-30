@@ -1,5 +1,4 @@
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { BrandMark } from '../components/BrandMark'
 import { lockupSizes, useShape } from '../layout'
@@ -34,7 +33,6 @@ export function EndCard({ tagline, taglineAccent, worksWith, cta }: EndCardProps
   const button = progress(frame, 130, 36)
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', padding: `0 ${pad}px` }}>
-      <Sfx cue="chime" at={2} volume={0.4} />
       <div style={{ display: 'flex', flexDirection: size.stacked ? 'column' : 'row', alignItems: 'center', gap: size.stacked ? 28 : 36 }}>
         <div style={{ transform: `scale(${logo})` }}>
           <BrandMark size={size.logo} />

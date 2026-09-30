@@ -1,5 +1,4 @@
 import { AbsoluteFill, useCurrentFrame } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { Eyebrow } from '../components/Eyebrow'
 import { RevealWords } from '../components/RevealWords'
@@ -54,7 +53,6 @@ export function Steps({ eyebrow, title, steps }: StepsProps) {
           const shown = progress(frame, at, 30)
           return (
             <div key={step.title} style={{ position: 'relative', display: 'flex', flexDirection: wide ? 'column' : 'row', gap: wide ? 28 : 28, width: wide ? each : undefined, paddingRight: wide ? 32 : 0, opacity: shown, transform: `translateY(${(1 - shown) * 20}px)` }}>
-              <Sfx cue="tick" at={at} volume={0.2} />
               <div style={{
                 flexShrink: 0, width: dot, height: dot, borderRadius: Math.min(dot / 2, 16 * round * 2), background: colors.accent,
                 color: inkOn(colors.accent), display: 'grid', placeItems: 'center', fontFamily: type.labelFont, fontSize: dot * 0.42, fontWeight: 700

@@ -1,5 +1,4 @@
 import { AbsoluteFill, Easing, useCurrentFrame } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { RevealWords } from '../components/RevealWords'
 import { fitText, useShape } from '../layout'
@@ -45,8 +44,6 @@ export function LogoReveal({ tagline, taglineAccent }: LogoRevealProps) {
   const nameAt = SETTLE - 30
   return (
     <AbsoluteFill>
-      <Sfx cue="whoosh" at={6} volume={0.25} />
-      <Sfx cue="chime" at={SETTLE - 8} volume={0.35} />
       <Stage3D camera={camera}>
         <group position={[0, 1, 0]}>
           <Logo3D size={wide ? 1.7 : shape === 'tall' ? 1.25 : 1.45} />

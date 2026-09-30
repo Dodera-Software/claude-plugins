@@ -1,5 +1,4 @@
 import { AbsoluteFill, Img, staticFile, useCurrentFrame } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { Eyebrow } from '../components/Eyebrow'
 import { useShape } from '../layout'
@@ -61,7 +60,6 @@ export function BeforeAfter({ eyebrow, before, after }: BeforeAfterProps) {
   const { wide, height, pad } = useShape()
   return (
     <AbsoluteFill style={{ justifyContent: 'center', padding: wide ? '0 160px' : `${Math.round(height * 0.08)}px ${pad}px` }}>
-      <Sfx cue="whoosh" at={AFTER_AT} volume={0.2} />
       {eyebrow && <Eyebrow text={eyebrow} />}
       <div style={{ display: 'flex', flexDirection: wide ? 'row' : 'column', gap: wide ? 48 : 32, alignItems: 'stretch' }}>
         <Panel side={before} after={false} start={10} />

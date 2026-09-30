@@ -5,6 +5,9 @@
 //
 //   ./render.sh                          list the videos
 //   ./render.sh AcmeTeaser-en            → out/acme-teaser-en-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg
+//   ./render.sh AcmeTeaser-en quick      → only the 1080p one (a draft to watch: about 4× faster)
+//                                        While it renders, out/progress.txt holds one line: how far
+//                                        along the whole video is, and about how long is left.
 //   ./render.sh AcmeTeaser-en still 120 900  single frames, to check a layout
 //   ./render.sh sheet ~/Downloads/reference.mp4  2 frames a second on contact sheets, to study a video
 //   ./render.sh setup                    get the render image ready (the first time: about 3 GB, 5–10 minutes)
@@ -20,7 +23,7 @@
 //                                        (voices run on the computer with Node, no Docker)
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -226,16 +229,57 @@ function dockerArgs(image, args, { entrypoint, publicMode = 'ro', extraMount } =
 }
 
 /**
- * A full render pass. Many 3D frames at 4K can run the browser out of memory with a tab per core;
- * the pass is then tried once more with two tabs, slower but within memory.
+ * How far the whole render is, across its passes, in out/progress.txt: one line in plain words
+ * ("42% · about 6 min left · the 4K version"), which Claude reads to tell the person how it's
+ * going. Each pass is a share of the whole (`from` to `to`); the time left comes from the pace so far.
  */
-function renderPass(image, args) {
-  const first = spawnSync('docker', dockerArgs(image, [...args, ...(process.env.VIDEO_CONCURRENCY ? [`--concurrency=${process.env.VIDEO_CONCURRENCY}`] : [])]), { stdio: 'inherit' })
-  if (first.status === 0) {
+const progress = {
+  started: Date.now(),
+  write(fraction, what) {
+    const done = Math.min(1, Math.max(0, fraction))
+    const elapsed = (Date.now() - this.started) / 1000
+    const left = done > 0.02 ? (elapsed / done) * (1 - done) : null
+    const time = done >= 1 ? '' : left === null ? 'working out the time left' : left < 60 ? 'under a minute left' : `about ${Math.round(left / 60)} min left`
+    try {
+      writeFileSync(join(HERE, 'out', 'progress.txt'), `${[`${Math.floor(done * 100)}%`, time, what].filter(Boolean).join(' · ')}\n`)
+    } catch {}
+  }
+}
+
+/**
+ * A full render pass, reporting its frames into the progress between `from` and `to`. Many 3D
+ * frames at 4K can run the browser out of memory with a tab per core; the pass is then tried once
+ * more with two tabs, slower but within memory.
+ */
+async function renderPass(image, args, { from, to, what }) {
+  const attempt = extra => new Promise(done => {
+    const child = spawn('docker', dockerArgs(image, [...args, ...extra]), { stdio: ['ignore', 'pipe', 'pipe'] })
+    let last = 0
+    const read = chunk => {
+      const text = chunk.toString()
+      process.stdout.write(text)
+      const matches = [...text.matchAll(/Rendered (\d+)\/(\d+)/g)]
+      const match = matches.at(-1)
+      if (match && Date.now() - last > 1000) {
+        last = Date.now()
+        progress.write(from + (to - from) * (Number(match[1]) / Number(match[2])), what)
+      }
+    }
+    child.stdout.on('data', read)
+    child.stderr.on('data', read)
+    child.on('close', code => done(code))
+  })
+  progress.write(from, what)
+  if (await attempt(process.env.VIDEO_CONCURRENCY ? [`--concurrency=${process.env.VIDEO_CONCURRENCY}`] : []) === 0) {
     return
   }
   console.log('The render ran out of room; trying again more slowly, two frames at a time...')
-  inImage(image, [...args, '--concurrency=2'])
+  progress.write(from, `${what}, again more slowly`)
+  if (await attempt(['--concurrency=2']) !== 0) {
+    progress.write(from, 'stopped: the render failed')
+    console.error('The render failed (see above).')
+    process.exit(1)
+  }
 }
 
 // On Linux the container writes as root; hand what it made back to whoever runs this, or they
@@ -376,12 +420,20 @@ if (rest[0] === 'still') {
 }
 
 // The same frames drawn at twice the pixel density: a 3840×2160 master for YouTube and big
-// screens, and 1080p for social posts, where platforms re-encode anyway.
-renderPass(image, ['render', 'out/bundle', command, `out/${slug}-4k.mp4`, '--scale=2'])
-renderPass(image, ['render', 'out/bundle', command, `out/${slug}-1080p.mp4`])
-inImage(image, ['still', 'out/bundle', command, `out/${slug}-poster.png`, '--frame=0', '--scale=2'])
+// screens, and 1080p for social posts, where platforms re-encode anyway. `quick` makes only the
+// 1080p one: a draft to watch and give notes on, in about a quarter of the time.
+const quick = rest[0] === 'quick'
+rmSync(join(HERE, 'out', `${slug}-4k.mp4`), { force: true })
+if (!quick) {
+  // 4K draws four times the pixels: about four fifths of the time goes there.
+  await renderPass(image, ['render', 'out/bundle', command, `out/${slug}-4k.mp4`, '--scale=2'], { from: 0, to: 0.78, what: 'the 4K version' })
+}
+await renderPass(image, ['render', 'out/bundle', command, `out/${slug}-1080p.mp4`], { from: quick ? 0 : 0.78, to: 0.97, what: 'the 1080p version' })
+progress.write(0.98, 'the poster and the final checks')
+inImage(image, ['still', 'out/bundle', command, `out/${slug}-poster.png`, '--frame=0', ...(quick ? [] : ['--scale=2'])])
 inImage(image, ['scripts/finish.mjs', slug], { entrypoint: 'node' })
 handBack(image, 'out')
 rmSync(join(HERE, 'out', 'bundle'), { recursive: true, force: true })
-console.log(`Done: out/${slug}-4k.mp4, out/${slug}-1080p.mp4, out/${slug}-poster.png, out/${slug}-thumbnail.jpg`)
+progress.write(1, 'done')
+console.log(`Done: ${quick ? '' : `out/${slug}-4k.mp4, `}out/${slug}-1080p.mp4, out/${slug}-poster.png, out/${slug}-thumbnail.jpg`)
 finish()

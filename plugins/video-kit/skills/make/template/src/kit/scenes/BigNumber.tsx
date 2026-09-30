@@ -1,5 +1,4 @@
 import { AbsoluteFill, useCurrentFrame } from 'remotion'
-import { Sfx } from '../audio/Sfx'
 import { useBrand } from '../brand'
 import { Eyebrow } from '../components/Eyebrow'
 import { RevealWords } from '../components/RevealWords'
@@ -39,7 +38,6 @@ export function BigNumber({ value, prefix = '', suffix = '', decimals = 0, label
   const labelSize = Math.round((shape === 'wide' ? 56 : 46) * type.scale)
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: align === 'center' ? 'center' : 'flex-start', textAlign: align, padding: `0 ${shape === 'wide' ? 180 : pad}px` }}>
-      <Sfx cue="success" at={16 + COUNT} volume={0.25} />
       {eyebrow && <Eyebrow text={eyebrow} />}
       <div style={{ fontSize: size, lineHeight: 1, fontWeight: Math.max(700, type.weight), letterSpacing: '-0.05em', color: colors.accent, fontVariantNumeric: 'tabular-nums', opacity: progress(frame, 8, 16) }}>
         {text}

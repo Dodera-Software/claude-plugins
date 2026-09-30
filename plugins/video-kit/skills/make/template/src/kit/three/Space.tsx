@@ -16,6 +16,9 @@ interface SpaceState {
   view: Matrix4
   focal: number
   fog: [number, number]
+  /** Distance kept sharp, and how strongly the rest blurs (0: everything sharp). */
+  focus: number
+  depthOfField: number
 }
 
 const SpaceContext = createContext<SpaceState | null>(null)
@@ -36,11 +39,17 @@ export interface SpaceProps {
   camera: CameraView
   /** Distances at which things start fading into the canvas and are gone (default 2.4 and 6 focal lengths). */
   fog?: [number, number]
+  /**
+   * Depth of field, like a camera lens: 0 (default) keeps everything sharp; 0.5 is gentle, 1 strong.
+   * What sits at the camera's target stays sharp, and things blur the further they are from that
+   * distance. Use it where one thing is the subject and others pass by; not in every scene.
+   */
+  depthOfField?: number
   children: ReactNode
   style?: CSSProperties
 }
 
-export function Space({ camera, fog, children, style }: SpaceProps) {
+export function Space({ camera, fog, depthOfField = 0, children, style }: SpaceProps) {
   const { height } = useVideoConfig()
   const focal = focalLength(height, camera.fov)
   const eye = new Vector3(...camera.position)
@@ -52,7 +61,7 @@ export function Space({ camera, fog, children, style }: SpaceProps) {
   return (
     <AbsoluteFill style={{ perspective: focal, perspectiveOrigin: '50% 50%', overflow: 'hidden', ...style }}>
       <div style={{ position: 'absolute', left: '50%', top: '50%', width: 0, height: 0, transformStyle: 'preserve-3d', transform: css(world) }}>
-        <SpaceContext.Provider value={{ view, focal, fog: fog ?? [2.4 * focal, 6 * focal] }}>
+        <SpaceContext.Provider value={{ view, focal, fog: fog ?? [2.4 * focal, 6 * focal], depthOfField, focus: eye.distanceTo(new Vector3(...camera.target)) }}>
           {children}
         </SpaceContext.Provider>
       </div>
@@ -85,6 +94,8 @@ export function Place({ at, width, height, turn = 0, tilt = 0, children, style }
   const tooClose = Math.min(1, Math.max(0, (depth - space.focal * 0.12) / (space.focal * 0.25)))
   const fade = 1 - Math.min(1, Math.max(0, (depth - near) / (far - near)))
   const opacity = tooClose * fade
+  // Out of focus with the distance from the focused plane, capped so nothing turns to fog.
+  const blur = space.depthOfField ? Math.min(9, (space.depthOfField * 14 * Math.abs(depth - space.focus)) / space.focus) : 0
   const place = FLIP.clone()
     .multiply(new Matrix4().makeTranslation(...at))
     .multiply(new Matrix4().makeRotationFromEuler(new Euler((-tilt * Math.PI) / 180, (turn * Math.PI) / 180, 0, 'YXZ')))
@@ -94,7 +105,7 @@ export function Place({ at, width, height, turn = 0, tilt = 0, children, style }
       style={{
         position: 'absolute', left: -width / 2, top: -height / 2, width, height,
         transform: css(place), backfaceVisibility: 'hidden',
-        opacity, visibility: opacity < 0.01 ? 'hidden' : 'visible', ...style
+        opacity, visibility: opacity < 0.01 ? 'hidden' : 'visible', filter: blur > 0.4 ? `blur(${blur.toFixed(1)}px)` : undefined, ...style
       }}
     >
       {children}

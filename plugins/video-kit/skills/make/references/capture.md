@@ -132,5 +132,25 @@ key at `at + mark.t * 60` lands on a step. A live recording (1×) looks soft zoo
 frame-by-frame ones zoom like screenshots. Anywhere else (a phone screen, a `Flythrough` stop's
 `visual`, a `Place`), use `<Recording src length />`, which fills its box.
 
+**Auto-zoom.** Each mark in a recording's .json has its `kind` (click, type, …), `t` and `end`
+in seconds, and for clicks and typing its `box` on the screen (fractions). `autoZoom(film, { at })`
+turns them into camera keys an editor would choose: in toward typing so it can be read, toward a
+click on a small target, holding while it happens, out again, and resting at least 2.5 s before the
+next zoom. Give it the same `at`, `from` and `rate` as the shot. Use it for recordings where the
+action is small on a big screen; skip it when the whole screen changes (a page swap) or the
+recording is already a close-up. `strength` 0.5 for calm films, 1.2 for punchy ones.
+**Highlights.** `highlights: autoHighlights(film, { at })` outlines the same moments in the brand
+colour: the outline settles onto the field or button just before it's used and fades a moment
+after. With `autoZoom` they read as one gesture (the camera moves in, the outline lands on the
+same spot). `dim: true` darkens the rest of the screen for a feature demo's key moment. On
+screenshots, give `highlights` by hand: `{ at, until, box }`, the box read from the screenshot in
+fractions. One thing outlined at a time, never every step.
+
+The recorded pointer is 1.5× the system's size, with a ring on every click, so it can be followed
+once the video is scaled down; `Cursor` on screenshots matches it.
+
+`frame: 'laptop'` puts the screen in a laptop instead of a browser window, for launch films;
+phone recordings go in a `Phone`.
+
 The captures can be committed with the video's source, so it re-renders without the app running;
 leave them out if they show anything that shouldn't be in the repo.

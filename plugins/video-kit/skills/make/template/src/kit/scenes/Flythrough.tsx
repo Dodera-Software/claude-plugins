@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { AbsoluteFill, Freeze, Img, staticFile, useCurrentFrame } from 'remotion'
 import { useBrand } from '../brand'
 import { Caption } from '../components/Caption'
+import { MotionBlur } from '../components/MotionBlur'
 import { useShape, type Shape } from '../layout'
 import { useLook } from '../look'
 import { readingFrames } from '../motion'
@@ -115,20 +116,24 @@ export function Flythrough(props: FlythroughProps) {
     ])
   ]
   const camera = cameraAt(frame, keys)
+  const travelling = times.some(({ depart, arrive }, index) => index > 0 && frame > depart + 15 && frame < arrive - 15)
   const radius = 18 * round
 
   return (
     <AbsoluteFill>
-      <Space camera={camera} fog={[distance * 1.6, distance * 1.6 + gap * 3.5]}>
-        {stops.map((stop, index) => (
-          <Place key={index} at={places[index].at} turn={places[index].turn} width={W} height={H}>
-            <div style={{ width: W, height: H, borderRadius: radius, overflow: 'hidden', background: colors.sheet, boxShadow: shadow.floating }}>
-              {stop.image && <Img src={staticFile(stop.image)} style={{ width: W, height: H, objectFit: 'cover', display: 'block' }} />}
-              {stop.visual && <Freeze frame={Math.max(0, frame - times[index].depart)}>{stop.visual}</Freeze>}
-            </div>
-          </Place>
-        ))}
-      </Space>
+      {/* Blurred only while the camera travels between stops, fastest in the middle of a move. */}
+      <MotionBlur active={travelling}>
+        <Space camera={camera} fog={[distance * 1.6, distance * 1.6 + gap * 3.5]} depthOfField={0.5}>
+          {stops.map((stop, index) => (
+            <Place key={index} at={places[index].at} turn={places[index].turn} width={W} height={H}>
+              <div style={{ width: W, height: H, borderRadius: radius, overflow: 'hidden', background: colors.sheet, boxShadow: shadow.floating }}>
+                {stop.image && <Img src={staticFile(stop.image)} style={{ width: W, height: H, objectFit: 'cover', display: 'block' }} />}
+                {stop.visual && <Freeze frame={Math.max(0, frame - times[index].depart)}>{stop.visual}</Freeze>}
+              </div>
+            </Place>
+          ))}
+        </Space>
+      </MotionBlur>
       {/* The canvas rises behind the captions, so they read over whatever passes below. */}
       <AbsoluteFill style={{ background: `linear-gradient(to top, ${colors.canvas} 6%, transparent 27%)` }} />
       {stops.map((stop, index) => (

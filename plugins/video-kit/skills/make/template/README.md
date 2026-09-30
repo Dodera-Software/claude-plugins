@@ -26,7 +26,7 @@ Rendering runs in Docker (no browser on your machine), the same on macOS, Window
 Linux; `render.sh` hands every command to `scripts/render.mjs`. It starts Docker Desktop if it isn't
 running and leaves it open.
 
-- `src/kit/`: shared motion, components, scenes, transitions and sounds. Update it by copying a
+- `src/kit/`: shared motion, components, scenes and transitions. Update it by copying a
   newer `template/src/kit` from the plugin.
 - `src/brands/<x>/`: this product's tokens, font and logo.
 - `src/videos/<x>/`: one video each: `BRIEF.md` (what it claims and where that comes from),

@@ -84,7 +84,7 @@ defineVideo({
 A scene with `voice` plays its line once it has arrived (after its entrance), or `at` frames in,
 and lasts at least until the line is said plus a breath: the voice sets the pace, and scenes grow
 to fit it. Put `at` where the line should land with the picture (the logo arriving, a number
-counting up). Sound effects play at 40% under a voiceover; keep them few. Still no music.
+counting up). The voice is the only sound: no effects, no music.
 
 Check it by ear, not only by stills: render the video and listen for a line cut off by a
 transition, two lines too close, or a line that says something before the picture shows it.

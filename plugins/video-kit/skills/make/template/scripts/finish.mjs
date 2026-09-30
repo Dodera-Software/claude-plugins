@@ -6,9 +6,9 @@
 //      and comes straight back (two sharp changes in a row, 3× the frames around them, with calm on
 //      either side), which reads as a flash or a pop. A cut changes once and stays; smooth fast
 //      motion rises and falls over several frames: neither is flagged.
-// Usage: node scripts/finish.mjs <slug>   (reads out/<slug>-4k.mp4, -1080p.mp4 and -poster.png)
+// Usage: node scripts/finish.mjs <slug>   (reads out/<slug>-1080p.mp4, -poster.png and -4k.mp4 if there is one)
 import { spawnSync } from 'node:child_process'
-import { readFileSync, renameSync, rmSync } from 'node:fs'
+import { existsSync, readFileSync, renameSync, rmSync } from 'node:fs'
 
 const FPS = 60
 
@@ -53,12 +53,12 @@ function previews(slug) {
   const thumbnail = `out/${slug}-thumbnail.jpg`
   // The long side becomes 1280, the other follows: wide 1280×720, square 1280×1280, tall 720×1280.
   ffmpeg(['-y', '-i', `out/${slug}-poster.png`, '-vf', "scale='if(gte(iw,ih),1280,-2)':'if(gte(iw,ih),-2,1280)'", '-q:v', '3', thumbnail])
-  for (const video of [`out/${slug}-4k.mp4`, `out/${slug}-1080p.mp4`]) {
+  for (const video of [`out/${slug}-4k.mp4`, `out/${slug}-1080p.mp4`].filter(file => existsSync(file))) {
     const temp = video.replace(/\.mp4$/, '.cover.mp4')
     ffmpeg(['-y', '-i', video, '-i', thumbnail, '-map', '0', '-map', '1', '-c', 'copy', '-disposition:v:1', 'attached_pic', '-movflags', '+faststart', temp])
     renameSync(temp, video)
   }
-  console.log(`${thumbnail}: preview written and embedded in both videos`)
+  console.log(`${thumbnail}: preview written and embedded in the video`)
 }
 
 const slug = process.argv[2]

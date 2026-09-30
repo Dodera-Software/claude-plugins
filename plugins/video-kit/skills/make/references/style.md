@@ -60,10 +60,10 @@ brand. Kit scenes follow it; your own scenes read it with `useLook()` (product-s
 
 | Look | Feels | Pick it for | Transitions that suit | Scenes that shine |
 | --- | --- | --- | --- | --- |
-| `editorial` | calm, spacious, light type, words drift into focus | premium, B2B, finance, health, calm brands | `grow`, `flood`, `dip` | `SplitScreen`, `BigQuote`, `ScreenMosaic`, `Steps`, `Flythrough` |
+| `editorial` | calm, spacious, light type, words drift into focus | premium, B2B, finance, health, calm brands | `grow`, `zoom`, `dip` | `SplitScreen`, `BigQuote`, `ScreenMosaic`, `Steps`, `Flythrough` |
 | `bold` | the brand colour fills the frame, heavy type, fast | launches, announcements, confident consumer brands | `wipe`, `pushCut`, `cut` | `WordSwap`, `BigNumber`, `TitleCard`, `BeforeAfter`, `LogoReveal` |
-| `technical` | dark, faint grid, monospaced labels, text snaps in | developer tools, APIs, infrastructure, data | `cut`, `push`, `wipe` | `Terminal`, `Steps`, `Marquee`, `SplitScreen` |
-| `playful` | tinted canvas, soft drifting shapes, bouncy, centred | consumer apps, education, community, fun brands | `grow`, `pushCut`, `flood` | `WordSwap`, `ChatPileUp`, `BigNumber`, `Marquee` |
+| `technical` | dark, faint grid, monospaced labels, text snaps in | developer tools, APIs, infrastructure, data | `zoom`, `push`, `cut` | `Terminal`, `Steps`, `Marquee`, `SplitScreen` |
+| `playful` | tinted canvas, soft drifting shapes, bouncy, centred | consumer apps, education, community, fun brands | `grow`, `zoom`, `flood` | `WordSwap`, `ChatPileUp`, `BigNumber`, `Marquee` |
 
 When they leave it to you, choose from the product itself: its site's feel, its audience, its own
 design. Say which look and why in one line of the storyboard.
@@ -88,6 +88,48 @@ design. Say which look and why in one line of the storyboard.
 - Vary the composition from scene to scene: text beside a visual, text over a wall of screens,
   a number alone, a full-frame window, a list, a centred quote.
 - One camera move per scene, never in and out back to back. Let one thing move at a time.
+
+## Restraint with effects
+
+The polish tools make a video look expensive only when they're rare. Each one where it earns its
+place, and some scenes simply calm:
+
+- **Auto-zoom** (capture.md) on the moments a viewer must read or notice: typing, a small button.
+  Two or three moves in a recording, none on a whole-page change.
+- **Depth of field** where one thing is the subject and others pass by (the fly-through, a card in
+  a crowd). Never on a flat scene full of text.
+- **Motion blur** only on fast camera moves and fast objects: a whip between screens, a falling
+  hammer. Never on a slow drift or on text.
+- **Highlights** (capture.md) on the one thing each moment is about: the field filled, the button
+  pressed. With auto-zoom on the same spot, one outline at a time, never on every click.
+- **Transitions** ease in and out, and most are `grow`, `zoom` or `dip`; a hard `cut` only on a
+  beat. A video that changes scenes smoothly feels edited; one that snaps feels generated.
+- **Device frames:** one kind per video. A laptop for launch and brand films, the browser window
+  for feature demos and tutorials (the address helps), a phone for mobile products.
+- **3D moments:** one or two in a chapters video, the backbone of a film; never 3D for its own sake.
+
+At most one "wow" per scene, and never two scenes in a row that shout.
+
+## The quality bar: never AI slop
+
+The first videos a company puts out decide whether people remember it as careful or as cheap AI
+output. Before showing stills, go through this and fix what fails:
+
+- **Specific:** every scene could only be this product: its real screens, names, numbers and
+  words. A generic dashboard with generic charts is slop.
+- **Human words:** say concrete things ("Log a week's hours in one sentence"), in the product's
+  own voice. No "unlock", "supercharge", "seamless", "elevate", "empower", "revolutionize", "in
+  today's fast-paced world", no three adjectives in a row, no questions nobody asks.
+- **Believable data:** plausible names and numbers, no lorem ipsum, no row of zeros or empty
+  states unless the point is the empty state.
+- **Type:** the product's own font (brand.md); titles at least 48 px and details 24 px at 1080p;
+  captions under about 45 characters a line; no word alone on a last line.
+- **Motion with intent:** every move leads the eye to what matters next. If something moves only
+  because it can, stop it.
+- **Pace:** one idea per scene, every line held its reading time, room to breathe.
+- **One voice:** one look, one device style, one narrator, one tone, start to finish.
+- **The ending** says what to do next, held long enough to act on (at least 4 s).
+- **The test:** would the product's own designer be proud to post this? If not, it isn't done.
 
 ## Never
 
