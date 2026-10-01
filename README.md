@@ -29,6 +29,12 @@ To get new versions automatically, turn on auto-update once: `/plugin` → **Mar
 **dodera** → **Enable auto-update**. What changed in each version:
 [releases](https://github.com/Dodera-Software/claude-plugins/releases).
 
+## Help and ideas
+
+- **Questions, ideas, and things you made:** [Discussions](https://github.com/Dodera-Software/claude-plugins/discussions).
+- **Something went wrong:** [report it](https://github.com/Dodera-Software/claude-plugins/issues/new/choose); no technical knowledge needed.
+- **A security problem:** privately, as [SECURITY.md](SECURITY.md) says.
+
 ## Layout
 
 ```

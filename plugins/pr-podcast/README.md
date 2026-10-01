@@ -83,8 +83,10 @@ Claude explains problems in plain words as they happen. The common ones:
 | Too long, too fast, too silly | Say so ("make it 2 minutes", "slower", "straight, no jokes"); Claude rewrites and records again. |
 | No update shows up in `/plugin` | Type `/plugin marketplace update dodera`, then update pr-podcast from `/plugin` → Installed. |
 
-Something else? [Open an issue](https://github.com/Dodera-Software/claude-plugins/issues) with what
-you asked for and what Claude said.
+Something else? [Tell us what went wrong](https://github.com/Dodera-Software/claude-plugins/issues/new/choose)
+with what you asked for and what Claude said. Questions and ideas go in
+[Discussions](https://github.com/Dodera-Software/claude-plugins/discussions), and so does anything
+you made with it: we'd love to see it.
 
 ## What leaves your computer
 

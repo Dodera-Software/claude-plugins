@@ -218,8 +218,10 @@ Claude explains problems in plain words as they happen. The common ones:
 | Text goes by too fast, or a scene is wrong | Say so like you would to a video editor ("scene 3 is too fast", "use our green, not the blue"); Claude redoes that part. |
 | No update shows up in `/plugin` | Type `/plugin marketplace update dodera`, then update video-kit from `/plugin` → Installed. |
 
-Something else? [Open an issue](https://github.com/Dodera-Software/claude-plugins/issues) with what
-you asked for and what Claude said.
+Something else? [Tell us what went wrong](https://github.com/Dodera-Software/claude-plugins/issues/new/choose)
+with what you asked for and what Claude said. Questions and ideas go in
+[Discussions](https://github.com/Dodera-Software/claude-plugins/discussions), and so does anything
+you made with it: we'd love to see it.
 
 ## Removing it
 

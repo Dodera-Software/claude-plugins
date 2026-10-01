@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/Dodera-Software/claude-plugins/discussions/categories/q-a
+    about: How do I…? Is it possible to…? Ask here, and others can find the answer too.
+  - name: Suggest an idea
+    url: https://github.com/Dodera-Software/claude-plugins/discussions/categories/ideas
+    about: Something you'd like the plugins to do.
+  - name: Show what you made
+    url: https://github.com/Dodera-Software/claude-plugins/discussions/categories/show-and-tell
+    about: Share a video or an episode you made with them.
+  - name: Report a security problem
+    url: https://github.com/Dodera-Software/claude-plugins/security/advisories/new
+    about: Privately, please, not in a public issue.

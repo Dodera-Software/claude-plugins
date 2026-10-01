@@ -1,0 +1,51 @@
+name: Something went wrong
+description: A plugin didn't do what it should, stopped, or showed an error.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for telling us. No technical knowledge needed: describe it the way you'd tell a colleague.
+        Please don't paste passwords, demo logins or anything private.
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: Which plugin?
+      options:
+        - Video Kit
+        - PR Podcast
+    validations:
+      required: true
+  - type: textarea
+    id: asked
+    attributes:
+      label: What did you ask for?
+      description: The command you typed or what you asked Claude, e.g. "/video-kit:make a launch film for our app".
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+      description: What you expected, what you got instead, and any message you saw. Screenshots help a lot (drag them in here).
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Type /plugin in Claude Code, open Installed, and look at the plugin's version. "Not sure" is fine.
+  - type: dropdown
+    id: system
+    attributes:
+      label: Your computer
+      options:
+        - Mac
+        - Windows
+        - Linux
+        - Not sure
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?
+      description: Where you were working (in your product's code, a folder of your own, a website), or anything that might help.
