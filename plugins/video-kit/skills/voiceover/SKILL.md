@@ -35,5 +35,7 @@ handing over) and `references/voice.md` for writing, choosing and recording the 
    `voice` line; scenes grow to fit their line by themselves. If a line lands before its picture
    (the product named before the logo shows), move it with `{ line, at }`. `npm run typecheck`,
    then `npm run timeline`: no line may run into the next scene's entrance.
-6. **Make it** (`./render.sh <VideoId>`), open it, and ask them to listen: "Is the voice's pace
+6. **Offer the editor, then make it.** First ask, as the make skill's step 7 does, whether to open
+   the editor (where they can rewrite a line and hear it again on the spot) or make the video now.
+   Then (`./render.sh <VideoId>`) open it, and ask them to listen: "Is the voice's pace
    right? Any line you'd like said differently?" A changed line is recorded again in seconds.

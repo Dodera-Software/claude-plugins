@@ -66,14 +66,14 @@ it). Recommend the headliners. Ask the make skill's Look and Language questions 
 
 Headliners grow out of each other (`grow` from the element that changed, or the look's own transitions).
 Video id `WhatsNew-<version or yyyy-mm-dd, dots as hyphens>`, e.g. `WhatsNew-v1-4-0`, so files are
-named `whats-new-v1-4-0-…`. Storyboard, stills for approval, the full video and the hand-over follow
-the make skill.
+named `whats-new-v1-4-0-…`. Storyboard, stills for approval, the offer of the editor before making
+it, the full video and the hand-over follow the make skill.
 
 ## Unattended (`--ci`, or no one to ask)
 
 When the arguments include `--ci` (the GitHub Action does), no one is there to answer:
 
-- Don't ask anything. Range from the arguments: "up to <tag>" is from the release tag before it to
+- Don't ask anything, and don't offer the editor: make the video straight away. Range from the arguments: "up to <tag>" is from the release tag before it to
   that tag; "since <tag or time>" is from there to HEAD; otherwise from the latest release tag to
   HEAD. Wide format, silent, English, screens recreated from the code, and the look that fits the
   product (the same one as the last what's-new video, if there is one, so the series feels

@@ -220,22 +220,60 @@ function places() {
   }
 }
 
-/** The system's own folder picker (Finder, Explorer, or zenity/kdialog on Linux). Null if cancelled. */
+/**
+ * The system's own folder picker (Finder, Explorer, or zenity on Linux). Null if cancelled.
+ *
+ * On Windows the dialog gets an invisible always-on-top window as its owner: a picker opened by a
+ * background process has no window of its own and otherwise opens behind the browser, where nobody
+ * sees it. The script goes in as -EncodedCommand (UTF-16LE, base64), so no quoting can break it, and
+ * the path comes back in UTF-8 so folders with accents survive.
+ */
 function pickFolder() {
   const prompt = 'Where should the video be saved?'
-  const [command, args] = process.platform === 'darwin'
-    ? ['osascript', ['-e', `POSIX path of (choose folder with prompt "${prompt}")`]]
-    : process.platform === 'win32'
-      ? ['powershell', ['-NoProfile', '-STA', '-Command', `Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.FolderBrowserDialog; $d.Description = '${prompt}'; $d.ShowNewFolderButton = $true; if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }`]]
-      : ['zenity', ['--file-selection', '--directory', `--title=${prompt}`]]
+  let command
+  let args
+  if (process.platform === 'darwin') {
+    command = 'osascript'
+    args = ['-e', `POSIX path of (choose folder with prompt "${prompt}")`]
+  } else if (process.platform === 'win32') {
+    const script = [
+      'Add-Type -AssemblyName System.Windows.Forms',
+      '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8',
+      '[System.Windows.Forms.Application]::EnableVisualStyles()',
+      '$owner = New-Object System.Windows.Forms.Form -Property @{ TopMost = $true; ShowInTaskbar = $false }',
+      '$dialog = New-Object System.Windows.Forms.FolderBrowserDialog',
+      `$dialog.Description = '${prompt}'`,
+      '$dialog.ShowNewFolderButton = $true',
+      'if ($dialog.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Out.Write($dialog.SelectedPath) }',
+      '$owner.Dispose()'
+    ].join('; ')
+    command = 'powershell.exe'
+    args = ['-NoProfile', '-NonInteractive', '-STA', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')]
+  } else {
+    command = 'zenity'
+    args = ['--file-selection', '--directory', `--title=${prompt}`]
+  }
+  const unavailable = 'The folder window couldn\'t open on this computer. Type the folder\'s path in the box under the buttons instead.'
   return new Promise((done, fail) => {
-    const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true })
     let out = ''
+    let errors = ''
     child.stdout.on('data', chunk => { out += chunk })
-    child.on('error', () => fail(new Error('This computer has no folder picker the edit room can open. Type the folder\'s path instead.')))
-    child.on('close', () => {
-      const path = out.trim().replace(/\/$/, '')
-      done(path || null)
+    child.stderr.on('data', chunk => { errors += chunk })
+    child.on('error', () => fail(new Error(unavailable)))
+    child.on('close', code => {
+      // A trailing slash off, except on a drive or disk root ("C:\\", "/").
+      const raw = out.trim()
+      const path = raw.length > 3 ? raw.replace(/[\\/]$/, '') : raw
+      if (path) {
+        return done(path)
+      }
+      // Cancelling exits quietly (macOS: code 1 with "User canceled"); anything else is a failure.
+      if (code === 0 || /cancel/i.test(errors)) {
+        return done(null)
+      }
+      console.error(`Folder picker failed (${code}): ${errors.trim()}`)
+      fail(new Error(unavailable))
     })
   })
 }

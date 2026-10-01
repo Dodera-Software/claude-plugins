@@ -81,6 +81,8 @@ export interface VideoDefinition {
     voice: ({ line: string, text: string, from: number, to: number } | null)[]
     /** Each scene's name, for the edit room ("Cover", then the scenes' own or "Scene 2"). */
     names: string[]
+    /** The shortest each scene can be made in the edit room, in frames (the cover can't be changed). */
+    floors: number[]
     /** The id it was defined with, before languages and shapes were added: the key for tweaks. */
     baseId: string
   }
@@ -106,7 +108,11 @@ export function defineVideo({ id, brand: base, format = 'landscape', look = 'edi
   const { width, height } = FORMATS[format]
   const brand = lookColors(base, look)
   // A scene's last line must end before the next scene starts coming in over it.
-  const ownScenes = givenScenes.map((scene, index) => withVoice(tweaked(scene, index, id), index, voiceover, givenScenes[index + 1]?.enter?.frames ?? (givenScenes[index + 1] ? crossfade().frames : 0)))
+  const nextEntrance = (index: number) => givenScenes[index + 1]?.enter?.frames ?? (givenScenes[index + 1] ? crossfade().frames : 0)
+  const ownScenes = givenScenes.map((scene, index) => withVoice(tweaked(scene, index, id), index, voiceover, nextEntrance(index)))
+  // The shortest each scene can be made in the edit room: a quarter off its own length at most, and
+  // never less than its voice line needs. The same rules as tweaked() and withVoice().
+  const ownFloors = givenScenes.map((scene, index) => withVoice({ ...scene, frames: Math.round(scene.frames * 0.75) }, index, voiceover, nextEntrance(index)).frames)
   const opening = cover === false ? undefined : (ownScenes[0].enter ?? flood({ x: width / 2, y: height / 2 }))
   const scenes: Scene[] = cover === false || !opening
     ? ownScenes
@@ -169,6 +175,7 @@ export function defineVideo({ id, brand: base, format = 'landscape', look = 'edi
       cover: cover !== false,
       voice: voiceTimes,
       names: scenes.map((scene, index) => (cover !== false && index === 0 ? 'Cover' : scene.name ?? `Scene ${cover !== false ? index : index + 1}`)),
+      floors: scenes.length > ownFloors.length ? [scenes[0].frames, ...ownFloors] : ownFloors,
       baseId: id
     }
   }

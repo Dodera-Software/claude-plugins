@@ -29,6 +29,9 @@ for their product. So:
 - **Short progress notes** at each step ("Reading how the product works…", "Making the video,
   about 3 minutes…"), and nothing else in between.
 - **Show, don't describe.** Before the full video, show still images of key moments to approve.
+- **Offer the editor before every render.** When a video is ready to be made (the first time, and
+  again after changes), always ask whether they'd like to open it in the editor first (step 7).
+  Every time, in every kind of video, quick ones too; never skip straight to making it.
 - **Errors in plain words**: what happened, what you're doing about it, and what (if anything)
   they need to do.
 - A developer may use it too; if they talk technically, match them.
@@ -258,13 +261,24 @@ word alone, headings over three lines, empty areas, anything cut at the edge, an
 claim not in the brief. "Too fast to read" is what viewers complain about; slow is fixable.
 
 Then show the person 3–4 of those images (open them, or point to them), one line each on the moment
-they show, and ask "Shall I make the full video, or would you like to watch it live first and
-tweak it yourself?" (the edit room, below). Their notes now cost seconds; after the full video,
-minutes. With a narrator, `npm run timeline` shows when each line is said: check that none
+they show, and ask what they'd like to change. Their notes now cost seconds; after the full video,
+minutes. When they're happy with the stills, go to step 7, which always starts by offering the
+editor. With a narrator, `npm run timeline` shows when each line is said: check that none
 runs into the next scene's entrance, and ask the person to listen to the voice's pace in the full
 video, which stills can't show.
 
 ## 7. Make the video and hand it over
+
+**First, always offer the editor.** Before every full render (the first one, and each one after
+changes), ask with the multiple-choice tool, never as a line of text they might miss:
+
+| Header | Question | Options (label: description) |
+| --- | --- | --- |
+| Next step | Your video is ready. Watch it in the editor first, or make it now? | Open the editor (recommended): it plays in your browser; change words, scene lengths and the narrator yourself, point at any moment for me to change, and export from there when you're happy · Make the video now: I make the finished files and open them for you |
+
+"Open the editor" goes to the edit room (below), and the render happens when they export there or
+ask you. Skip the question only when they already said in this conversation not to use the editor,
+or asked outright to "just make it".
 
 `./render.sh <VideoId>` (once per video id: each language and shape) makes the full-resolution and
 1080p videos, a poster and a thumbnail in the video's own shape, and checks every frame for
@@ -290,13 +304,14 @@ that takes more than a minute. Then:
 ## The edit room (when they want to watch and tweak it themselves)
 
 A page in their browser that plays the video live, with its scenes, words and narrator lines to
-change on the spot, notes for you on any moment, and export. Offer it after the stills ("watch it
-live first?"), after the full video (for notes), and whenever they want to change something small
+change on the spot, notes for you on any moment, and export. It's offered before every render
+(step 7), again after the full video (for notes), and whenever they want to change something
 themselves. It runs only on their computer (`localhost`), and only while it's open.
 
 1. Start it in the background: `./render.sh room <VideoId>` (Bash, `run_in_background`). It opens
-   the browser by itself and prints its address; tell them in one line: "The edit room is open in
-   your browser. Play it, change words or lengths directly, and leave notes for me on any moment."
+   the browser by itself and prints its address; tell them in one line: "The editor is open in
+   your browser. Play it, change words or lengths directly (drag a scene's edge on the timeline, or
+   type its length), and leave notes for me on any moment."
 2. Watch for their notes: run `node scripts/notes.mjs watch` with the Monitor tool (30-minute
    limit: start it again when it ends, while the room is open). Each line it prints is a note, as
    JSON: which video, scene and moment, and what they want. While it runs, the page tells them

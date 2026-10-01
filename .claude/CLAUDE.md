@@ -215,7 +215,8 @@ bundled ffmpeg (it has no `fps` filter; use `-r`):
   here) and writes only `content.ts` (words, found with the TypeScript parser and checked unchanged
   before each save), `voice.json`, `src/tweaks.json` and `notes.json`; an export renders into `out/` and then copies
   the files to the folder they chose (the system's own picker: osascript, PowerShell, zenity), never
-  over an existing file. Claude hears notes through
+  over an existing file. On Windows the picker gets an invisible always-on-top owner window
+  (a dialog from a background process otherwise opens behind the browser, where nobody sees it). Claude hears notes through
   `scripts/notes.mjs watch`, whose heartbeat is how the page knows Claude is listening. Export runs
   `render.mjs` as Claude would. Check the page with headless Chrome and puppeteer-core, not only
   the type check: a render that works can still fail in the Player.

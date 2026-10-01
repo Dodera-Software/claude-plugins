@@ -85,16 +85,26 @@ function seconds(frames: number, fps: number): string {
   return `${(frames / fps).toFixed(1)} s`
 }
 
-type Scene = { name: string, start: number, frames: number, enter: number, voice: { line: string, text?: string, from: number, to: number } | null, number: number | null }
+/** How long a scene may be made by hand at the very least: half a second (each scene has its own floor too). */
+const SHORTEST = 30
+
+/** Why a scene can't get shorter, in plain words. */
+function floorReason(scene: { name: string, voice: unknown, floor: number }, fps: number): string {
+  return `The shortest “${scene.name}” can be is ${seconds(scene.floor, fps)}, so ${scene.voice ? 'the narrator can finish and ' : ''}its words stay readable.`
+}
+
+type Scene = { name: string, start: number, frames: number, enter: number, voice: { line: string, text?: string, from: number, to: number } | null, number: number | null, floor: number }
 
 function scenesOf(video: VideoDefinition): Scene[] {
-  const { starts, frames, enters, voice = [], names = [], cover } = video.timeline
+  const { starts, frames, enters, voice = [], names = [], floors = [], cover } = video.timeline
   return starts.map((start, index) => ({
     name: names[index] ?? (cover && index === 0 ? 'Cover' : `Scene ${cover ? index : index + 1}`),
     start,
     frames: frames[index],
     enter: enters[index],
     voice: voice[index] ?? null,
+    // The shortest it may be made, so its words stay readable and its narration fits.
+    floor: Math.max(SHORTEST, floors[index] ?? 0),
     // The number tweaks use: scenes from 1, the cover not counted.
     number: cover ? (index === 0 ? null : index) : index + 1
   }))
@@ -115,12 +125,18 @@ function sceneAt(scenes: Scene[], frame: number): number {
 
 type Toast = { id: number, tone: 'good' | 'error' | 'plain', text: string }
 let pushToast: (tone: Toast['tone'], text: string) => void = () => {}
+// The last message shown, so a reload a moment later (the preview updating) shows it again
+// instead of a plain "Preview updated".
+let lastToast: { text: string, at: number } | null = null
 
 function Toasts() {
   const [toasts, setToasts] = useState<Toast[]>([])
   useEffect(() => {
     let next = 1
     pushToast = (tone, text) => {
+      if (tone !== 'error') {
+        lastToast = { text, at: Date.now() }
+      }
       const id = next++
       setToasts(current => [...current.slice(-2), { id, tone, text }])
       setTimeout(() => setToasts(current => current.filter(toast => toast.id !== id)), tone === 'error' ? 6000 : 2600)
@@ -262,9 +278,49 @@ function Segmented<T extends string | number>({ value, options, onChange }: { va
 // ---------------------------------------------------------------------------------------------
 // The timeline under the video: a ruler, the scenes, the narrator, and the playhead.
 
-function Timeline({ video, scenes, frame, onSeek }: { video: VideoDefinition, scenes: Scene[], frame: number, onSeek: (frame: number) => void }) {
+function Timeline({ video, scenes, frame, tweaks, onSeek, onTweak }: {
+  video: VideoDefinition
+  scenes: Scene[]
+  frame: number
+  tweaks: Record<string, number>
+  onSeek: (frame: number) => void
+  onTweak: (scene: number, extra: number) => Promise<void>
+}) {
   const bar = useRef<HTMLDivElement>(null)
   const [hover, setHover] = useState<number | null>(null)
+  // A scene's end being dragged: which scene, and by how many frames so far (snapped to 0.1 s).
+  const [dragging, setDragging] = useState<{ index: number, delta: number } | null>(null)
+  const grab = (event: React.MouseEvent, index: number) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const scene = scenes[index]
+    const box = bar.current!.getBoundingClientRect()
+    const from = event.clientX
+    const snap = video.fps / 10
+    let delta = 0
+    document.body.classList.add('is-scrubbing')
+    setDragging({ index, delta: 0 })
+    const move = (next: MouseEvent) => {
+      next.preventDefault()
+      const frames = ((next.clientX - from) / box.width) * video.durationInFrames
+      delta = Math.max(scene.floor - scene.frames, Math.round(frames / snap) * snap)
+      setDragging({ index, delta })
+    }
+    const up = () => {
+      document.body.classList.remove('is-scrubbing')
+      window.removeEventListener('mousemove', move)
+      window.removeEventListener('mouseup', up)
+      setDragging(null)
+      if (delta !== 0 && scene.number !== null) {
+        const extra = tweaks[String(scene.number)] ?? 0
+        onTweak(scene.number, extra + delta)
+          .then(() => pushToast('good', scene.frames + delta <= scene.floor ? floorReason(scene, video.fps) : `${scene.name}: ${seconds(scene.frames + delta, video.fps)} · the preview updates in a moment`))
+          .catch(caught => pushToast('error', caught.message))
+      }
+    }
+    window.addEventListener('mousemove', move)
+    window.addEventListener('mouseup', up)
+  }
   const total = video.durationInFrames
   const length = total / video.fps
   const at = (clientX: number) => {
@@ -318,16 +374,27 @@ function Timeline({ video, scenes, frame, onSeek }: { video: VideoDefinition, sc
           ))}
         </div>
         <div className="track track-scenes">
-          {scenes.map((scene, index) => (
-            <div
-              key={index}
-              className={`clip ${index === current ? 'is-current' : ''}`}
-              // Each block runs to where the next scene starts; the overlap is the transition.
-              style={{ left: `${(scene.start / total) * 100}%`, width: `${(((scenes[index + 1]?.start ?? total) - scene.start) / total) * 100}%` }}
-            >
-              <span>{scene.name}</span>
-            </div>
-          ))}
+          {scenes.map((scene, index) => {
+            // Each block runs to where the next scene starts; the overlap is the transition.
+            const end = scenes[index + 1]?.start ?? total
+            const delta = dragging?.index === index ? dragging.delta : 0
+            return (
+              <div
+                key={index}
+                className={`clip ${index === current ? 'is-current' : ''} ${dragging?.index === index ? 'is-dragging' : ''}`}
+                style={{ left: `${(scene.start / total) * 100}%`, width: `${((end + delta - scene.start) / total) * 100}%` }}
+              >
+                <span>{scene.name}</span>
+                {scene.number !== null && (
+                  <i
+                    className="clip-handle"
+                    title={`Drag to make “${scene.name}” longer or shorter`}
+                    onMouseDown={event => grab(event, index)}
+                  />
+                )}
+              </div>
+            )
+          })}
         </div>
         {hasVoice && (
           <div className="track track-voice">
@@ -339,7 +406,19 @@ function Timeline({ video, scenes, frame, onSeek }: { video: VideoDefinition, sc
           </div>
         )}
         <div className="playhead" style={{ left: `${(frame / total) * 100}%` }}><i /></div>
-        {hover !== null && (
+        {dragging && (() => {
+          const scene = scenes[dragging.index]
+          const end = (scenes[dragging.index + 1]?.start ?? total) + dragging.delta
+          return (
+            <div className="drag-line" style={{ left: `${(end / total) * 100}%` }}>
+              <span>
+                {scene.name}: {seconds(scene.frames, video.fps)} → <strong>{seconds(scene.frames + dragging.delta, video.fps)}</strong>
+                {scene.frames + dragging.delta <= scene.floor && <em> · shortest so it stays readable</em>}
+              </span>
+            </div>
+          )
+        })()}
+        {hover !== null && !dragging && (
           <div className="hover-line" style={{ left: `${(hover / total) * 100}%` }}>
             <span>{clock(hover, video.fps)} · {scenes[sceneAt(scenes, hover)].name}</span>
           </div>
@@ -351,6 +430,53 @@ function Timeline({ video, scenes, frame, onSeek }: { video: VideoDefinition, sc
 
 // ---------------------------------------------------------------------------------------------
 // Tabs
+
+/** A scene's length in seconds, typed directly: Enter or leaving the box sets it, Esc puts it back. */
+function LengthInput({ frames, fps, changed, floor, reason, onSet }: { frames: number, fps: number, changed: boolean, floor: number, reason: string, onSet: (frames: number) => void }) {
+  const shown = (frames / fps).toFixed(1)
+  const [text, setText] = useState(shown)
+  useEffect(() => {
+    setText(shown)
+  }, [shown])
+  const commit = () => {
+    const value = Number(text.replace(',', '.'))
+    if (!Number.isFinite(value) || value <= 0) {
+      setText(shown)
+      pushToast('error', 'Type a length in seconds, like 4.5')
+      return
+    }
+    const wanted = Math.round(value * fps)
+    const target = Math.max(floor, wanted)
+    if (wanted < floor) {
+      pushToast('plain', reason)
+      setText((target / fps).toFixed(1))
+    }
+    if (target !== frames) {
+      onSet(target)
+    }
+  }
+  return (
+    <label className={`length ${changed ? 'is-changed' : ''}`} title="Type a length in seconds">
+      <input
+        value={text}
+        inputMode="decimal"
+        onChange={event => setText(event.target.value)}
+        onFocus={event => event.target.select()}
+        onBlur={commit}
+        onKeyDown={event => {
+          if (event.key === 'Enter') {
+            ;(event.target as HTMLInputElement).blur()
+          }
+          if (event.key === 'Escape') {
+            setText(shown)
+            setTimeout(() => (event.target as HTMLInputElement).blur())
+          }
+        }}
+      />
+      <span>s</span>
+    </label>
+  )
+}
 
 function ScenesTab({ video, scenes, frame, tweaks, onSeek, onTweak, onNote }: {
   video: VideoDefinition
@@ -366,7 +492,7 @@ function ScenesTab({ video, scenes, frame, tweaks, onSeek, onTweak, onNote }: {
   const tweak = (scene: number, extra: number) => onTweak(scene, extra).catch(caught => pushToast('error', caught.message))
   return (
     <div className="tab">
-      <p className="lead">Click a scene to jump to it. Make it hold longer or shorter in half-second steps; the preview updates by itself.</p>
+      <p className="lead">Click a scene to jump to it. Change how long it holds with − and +, by typing a length, or by dragging the end of its block on the timeline; the preview updates by itself.</p>
       <ol className="scene-list">
         {scenes.map((scene, index) => {
           const extra = scene.number ? tweaks[String(scene.number)] ?? 0 : 0
@@ -384,8 +510,28 @@ function ScenesTab({ video, scenes, frame, tweaks, onSeek, onTweak, onNote }: {
                 {scene.number !== null
                   ? (
                       <div className="stepper" title="How long this scene holds">
-                        <button onClick={() => tweak(scene.number!, extra - half)} aria-label="Half a second shorter"><Minus size={13} /></button>
-                        <span className={extra ? 'is-changed' : ''}>{seconds(scene.frames, video.fps)}</span>
+                        <button
+                          onClick={() => {
+                            if (scene.frames <= scene.floor) {
+                              pushToast('plain', floorReason(scene, video.fps))
+                              return
+                            }
+                            tweak(scene.number!, extra - Math.min(half, scene.frames - scene.floor))
+                          }}
+                          aria-label="Half a second shorter"
+                          className={scene.frames <= scene.floor ? 'is-floor' : ''}
+                          title={scene.frames <= scene.floor ? `As short as it can be (${seconds(scene.floor, video.fps)})` : 'Half a second shorter'}
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <LengthInput
+                          frames={scene.frames}
+                          fps={video.fps}
+                          changed={extra !== 0}
+                          floor={scene.floor}
+                          reason={floorReason(scene, video.fps)}
+                          onSet={target => tweak(scene.number!, extra + (target - scene.frames))}
+                        />
                         <button onClick={() => tweak(scene.number!, extra + half)} aria-label="Half a second longer"><Plus size={13} /></button>
                       </div>
                     )
@@ -403,7 +549,7 @@ function ScenesTab({ video, scenes, frame, tweaks, onSeek, onTweak, onNote }: {
           )
         })}
       </ol>
-      <p className="footnote">Lengths apply to every language and shape of this video. A scene never gets shorter than its narration needs, or by more than a quarter, so its words stay readable.</p>
+      <p className="footnote">Lengths apply to every language and shape of this video. Each scene has a shortest length, about three quarters of its own and never less than its narration needs, so its words stay readable: the editor stops there and tells you.</p>
     </div>
   )
 }
@@ -787,6 +933,11 @@ function SaveTo({ value, onChange, disabled }: { value: Destination, onChange: (
             </button>
           ))}
       </div>
+      {picking && (
+        <p className="footnote picking">
+          A folder window has opened. If you don't see it, it may be behind this browser window: look in the taskbar or the Dock.
+        </p>
+      )}
       <input
         className="path"
         value={value.kind === 'video' ? home(places?.video.path ?? 'video/out') : value.path}
@@ -979,7 +1130,8 @@ function Room() {
   }, [id, tab])
 
   const reload = useCallback(() => {
-    keep({ id, tab, frame: player.current?.getCurrentFrame() ?? frame, playing: player.current?.isPlaying() ?? false, toast: 'Preview updated' })
+    const recent = lastToast && Date.now() - lastToast.at < 4000 ? lastToast.text : 'Preview updated'
+    keep({ id, tab, frame: player.current?.getCurrentFrame() ?? frame, playing: player.current?.isPlaying() ?? false, toast: recent })
     location.reload()
   }, [id, tab, frame])
 
@@ -1114,6 +1266,10 @@ function Room() {
   }
 
   const tweaks = project?.tweaks[baseId] ?? {}
+  const tweakScene = async (scene: number, extra: number) => {
+    const data = await api<{ tweaks: Project['tweaks'] }>('/api/tweak', { id: baseId, scene, extra })
+    setProject(currentProject => (currentProject ? { ...currentProject, tweaks: data.tweaks } : currentProject))
+  }
   const open = notes.filter(note => (note.video === video.id || !note.video) && ['new', 'working', 'question'].includes(note.status)).length
   const exportPercent = Number(/^(\d+)%/.exec(exporting.progress ?? '')?.[1] ?? 0)
   const TABS: [Tab, ReactNode, string, ReactNode?][] = [
@@ -1217,7 +1373,7 @@ function Room() {
               <button className="icon-button" onClick={() => player.current?.requestFullscreen()} title="Full screen (F)"><Maximize size={16} /></button>
             </div>
           </div>
-          <Timeline video={video} scenes={scenes} frame={frame} onSeek={seek} />
+          <Timeline video={video} scenes={scenes} frame={frame} tweaks={tweaks} onSeek={seek} onTweak={tweakScene} />
         </section>
 
         <aside className="panel">
@@ -1245,10 +1401,7 @@ function Room() {
               frame={frame}
               tweaks={tweaks}
               onSeek={seek}
-              onTweak={async (scene, extra) => {
-                const data = await api<{ tweaks: Project['tweaks'] }>('/api/tweak', { id: baseId, scene, extra })
-                setProject(currentProject => (currentProject ? { ...currentProject, tweaks: data.tweaks } : currentProject))
-              }}
+              onTweak={tweakScene}
               onNote={index => {
                 setNotePreset(index)
                 setTab('notes')
