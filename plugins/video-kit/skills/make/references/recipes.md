@@ -2,12 +2,13 @@
 
 ## A reference
 
-If they mention a video they'd like theirs to feel like, ask them to put the file in the project
-(or give its path). `./render.sh sheet <file>` puts 2 frames a second on contact sheets in `out/`.
-Read them and note its beats, how each scene becomes the next, camera moves, colours and type.
-Borrow structure and rhythm, never another company's brand or content.
+A link or a file they like: watch it with `node scripts/reference.mjs <link or file>`
+(direction.md, "Watching a reference"). Note its world, beats, how each scene becomes the next,
+camera moves, colours and type. Borrow style and rhythm, never another company's brand or content.
 
-Starting structures for the usual requests. Each says what to find out, what each beat is for and
+Starting structures for the usual requests: the beats a video of that kind needs, and the time
+each gets. The "ways to fill it" are examples of kit scenes for a plain product video; a video with
+its own world fills every beat from that world (direction.md). Each says what to find out, what each beat is for and
 a few ways to fill it, and what goes wrong. They are skeletons, not videos: your idea for the
 product decides the scenes (style.md, "Every video is its own"), and no two videos should fill the
 beats the same way.

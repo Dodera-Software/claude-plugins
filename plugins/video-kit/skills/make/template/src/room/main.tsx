@@ -1,32 +1,70 @@
 // The edit room's page (scripts/room.mjs serves it). Plays the studio's videos live with Remotion's
 // Player and lets the person change words, scene lengths and voice lines on the spot, leave notes
 // for Claude, and export. Not part of any video: nothing in src/videos imports it.
-import { Player, type PlayerRef } from '@remotion/player'
+import { Player, Thumbnail, type PlayerRef } from '@remotion/player'
 import {
-  Check, ChevronLeft, ChevronRight, CircleAlert, Clapperboard, Download, FolderOpen, Info, Keyboard, LayoutList,
-  LoaderCircle, Maximize, MessageSquare, Mic, Minus, Pause, Play, Plus, Power, Repeat, RotateCcw, Search, Send, SkipBack,
-  SkipForward, Sparkles, Trash2, Type, Volume2, VolumeX, X
+  Check, ChevronLeft, ChevronRight, CircleAlert, Clapperboard, Clock, Copy, Download, Eye, EyeOff, FolderOpen, GripVertical,
+  Info, Keyboard, LayoutList, LoaderCircle, Maximize, MessageSquare, Mic, Minus, Pause, Pencil, Play, Plus, Power, Repeat,
+  RotateCcw, Search, Send, SkipBack, SkipForward, Sparkles, Trash2, Type, Undo2, Volume2, VolumeX, X
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { VideoDefinition } from '../kit'
 import { VIDEOS } from '../videos'
+import { Studio, type Session } from './studio'
 import './room.css'
 
 // ---------------------------------------------------------------------------------------------
 // Talking to the room's server
 
 type Folder = { folder: string, ids: string[], content: boolean, voice: boolean }
-type Project = { folders: Folder[], tweaks: Record<string, Record<string, number>>, wanted: string | null, buildError: string | null }
+type Project = { folders: Folder[], tweaks: Record<string, unknown>, wanted: string | null, buildError: string | null }
+type Version = { id: string, at: number, label: string, who: 'you' | 'claude', kind: 'change' | 'restore' }
+type Versions = { versions: Version[], cursor: string | null, keepDays: number, keep: number }
+type Arrange = { order?: number[] | null, hidden?: number[], enter?: Record<string, string>, name?: string }
+
+/** A video's name as people see it: renamed in the edit room, or its own, plus its shape and language when it has several. */
+function titleOf(video: VideoDefinition, tweaks?: Record<string, unknown>) {
+  const { baseId, title } = video.timeline
+  const renamed = (tweaks?.[baseId] as { name?: unknown } | undefined)?.name
+  const suffix = video.id.length > baseId.length ? video.id.slice(baseId.length + 1).split('-').join(', ') : ''
+  return `${typeof renamed === 'string' && renamed ? renamed : title}${suffix ? ` (${suffix})` : ''}`
+}
+
+/** A video's scene lengths from src/tweaks.json (an older file holds only those; a newer one, more). */
+function lengthsOf(entry: unknown): Record<string, number> {
+  if (!entry || typeof entry !== 'object') {
+    return {}
+  }
+  return 'lengths' in entry ? (entry as { lengths: Record<string, number> }).lengths : entry as Record<string, number>
+}
+
+const TRANSITION_NAMES: [string, string][] = [
+  ['', 'As designed'], ['fade', 'Fade'], ['fade-through', 'Fade through'], ['zoom-in', 'Zoom in'], ['zoom-out', 'Zoom out'],
+  ['slide', 'Slide'], ['wipe', 'Wipe'], ['cut', 'Cut']
+]
+
+function timeAgo(at: number): string {
+  const minutes = Math.round((Date.now() - at) / 60000)
+  if (minutes < 1) {
+    return 'just now'
+  }
+  if (minutes < 60) {
+    return `${minutes} min ago`
+  }
+  const hours = Math.round(minutes / 60)
+  return hours < 24 ? `${hours} h ago` : `${Math.round(hours / 24)} d ago`
+}
 type Word = { path: string, text: string, start: number, end: number }
 type VoiceLine = { id: string, text: string, say?: string }
 type VoiceScript = { voice: string, speed?: number, lines: VoiceLine[] }
 type Note = { id: number, video: string, scene: number | null, sceneName: string | null, frame: number | null, time: string | null, text: string, status: 'new' | 'working' | 'done' | 'question', reply: string | null, at: string }
-type ExportState = { running: boolean, id?: string, quick?: boolean, code?: number | null, progress?: string, files?: string[], tail?: string, started?: number, destination?: string | null, copyError?: string | null }
+type ExportMode = 'quick' | '4k' | 'full'
+type ExportState = { running: boolean, id?: string, mode?: ExportMode, code?: number | null, progress?: string, files?: string[], tail?: string, started?: number, destination?: string | null, copyError?: string | null }
 type Places = Record<'video' | 'downloads' | 'desktop', { path: string, exists: boolean }>
 type Destination = { kind: 'video' | 'downloads' | 'desktop' | 'custom', path: string }
 
-async function api<T>(path: string, body?: unknown): Promise<T> {
+export async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(path, body === undefined
     ? { cache: 'no-store' }
     : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Edit-Room': '1' }, body: JSON.stringify(body) })
@@ -37,10 +75,39 @@ async function api<T>(path: string, body?: unknown): Promise<T> {
   return data as T
 }
 
+/**
+ * The server's events (the video changed, notes, the session…), over one connection for the whole
+ * page: Safari allows six per site, and a few editor tabs each holding several would leave a new
+ * page waiting with nothing on screen.
+ */
+let sharedEvents: EventSource | null = null
+type ServerEvents = { on: (event: string, handler: (event: MessageEvent) => void) => void, onState: (open: () => void, lost: () => void) => void, close: () => void }
+export function serverEvents(): ServerEvents {
+  sharedEvents ??= new EventSource('/api/events')
+  const source = sharedEvents
+  const added: [string, (event: MessageEvent) => void][] = []
+  return {
+    on(event, handler) {
+      source.addEventListener(event, handler as EventListener)
+      added.push([event, handler])
+    },
+    onState(open, lost) {
+      source.addEventListener('open', open)
+      source.addEventListener('error', lost)
+      added.push(['open', open as never], ['error', lost as never])
+    },
+    close() {
+      for (const [event, handler] of added) {
+        source.removeEventListener(event, handler as EventListener)
+      }
+    }
+  }
+}
+
 // What the page was showing, kept across the reloads that bring in each change.
 const KEPT = 'edit-room-state'
-type Tab = 'scenes' | 'words' | 'voice' | 'notes' | 'export'
-type Kept = { id?: string, frame?: number, tab?: Tab, playing?: boolean, toast?: string }
+type Tab = 'scenes' | 'words' | 'voice' | 'notes' | 'export' | 'versions'
+type Kept = { id?: string, frame?: number, tab?: Tab, playing?: boolean, toast?: string, reloading?: boolean }
 function kept(): Kept {
   try {
     return JSON.parse(sessionStorage.getItem(KEPT) ?? '{}')
@@ -96,7 +163,7 @@ function floorReason(scene: { name: string, voice: unknown, floor: number }, fps
 type Scene = { name: string, start: number, frames: number, enter: number, voice: { line: string, text?: string, from: number, to: number } | null, number: number | null, floor: number }
 
 function scenesOf(video: VideoDefinition): Scene[] {
-  const { starts, frames, enters, voice = [], names = [], floors = [], cover } = video.timeline
+  const { starts, frames, enters, voice = [], names = [], floors = [], numbers = [], cover } = video.timeline
   return starts.map((start, index) => ({
     name: names[index] ?? (cover && index === 0 ? 'Cover' : `Scene ${cover ? index : index + 1}`),
     start,
@@ -105,8 +172,9 @@ function scenesOf(video: VideoDefinition): Scene[] {
     voice: voice[index] ?? null,
     // The shortest it may be made, so its words stay readable and its narration fits.
     floor: Math.max(SHORTEST, floors[index] ?? 0),
-    // The number tweaks use: scenes from 1, the cover not counted.
-    number: cover ? (index === 0 ? null : index) : index + 1
+    // The scene's own number, as written in code (from 1; the cover has none). Lengths, order and
+    // transitions are kept by it, so they follow the scene wherever it's moved.
+    number: numbers.length ? numbers[index] ?? null : cover ? (index === 0 ? null : index) : index + 1
   }))
 }
 
@@ -124,7 +192,7 @@ function sceneAt(scenes: Scene[], frame: number): number {
 // Toasts: a short confirmation in the corner, instead of text under every field.
 
 type Toast = { id: number, tone: 'good' | 'error' | 'plain', text: string }
-let pushToast: (tone: Toast['tone'], text: string) => void = () => {}
+export let pushToast: (tone: Toast['tone'], text: string) => void = () => {}
 // The last message shown, so a reload a moment later (the preview updating) shows it again
 // instead of a plain "Preview updated".
 let lastToast: { text: string, at: number } | null = null
@@ -160,9 +228,65 @@ function Toasts() {
 }
 
 // ---------------------------------------------------------------------------------------------
+// A question in the page (instead of the browser's own pop-up): ask('…', { yes: 'Delete' }) → true/false.
+
+type Ask = { title: string, text?: string, yes: string, no: string, danger: boolean, input?: string, done: (answer: boolean, value?: string) => void }
+let showAsk: (ask: Ask) => void = () => {}
+
+function ask(title: string, { text, yes = 'OK', no = 'Cancel', danger = false }: { text?: string, yes?: string, no?: string, danger?: boolean } = {}): Promise<boolean> {
+  return new Promise(done => showAsk({ title, text, yes, no, danger, done }))
+}
+
+/** A question answered in words: the text, or null when cancelled. */
+function askText(title: string, { value = '', text, yes = 'Save' }: { value?: string, text?: string, yes?: string } = {}): Promise<string | null> {
+  return new Promise(done => showAsk({ title, text, yes, no: 'Cancel', danger: false, input: value, done: (answer, typed) => done(answer ? (typed ?? '') : null) }))
+}
+
+function Dialog() {
+  const [current, setCurrent] = useState<Ask | null>(null)
+  const yes = useRef<HTMLButtonElement>(null)
+  const field = useRef<HTMLInputElement>(null)
+  const [typed, setTyped] = useState('')
+  useEffect(() => {
+    showAsk = setCurrent
+  }, [])
+  useEffect(() => {
+    setTyped(current?.input ?? '')
+    if (current?.input !== undefined) {
+      field.current?.focus()
+      field.current?.select()
+    } else {
+      yes.current?.focus()
+    }
+  }, [current])
+  if (!current) {
+    return null
+  }
+  const answer = (value: boolean) => {
+    setCurrent(null)
+    current.done(value, typed.trim())
+  }
+  return (
+    <div className="modal-backdrop" onMouseDown={() => answer(false)} onKeyDown={event => event.key === 'Escape' && answer(false)}>
+      <div className="modal dialog" role="dialog" aria-modal="true" onMouseDown={event => event.stopPropagation()}>
+        <strong className="dialog-title">{current.title}</strong>
+        {current.text && <p className="dialog-text">{current.text}</p>}
+        {current.input !== undefined && (
+          <input ref={field} className="dialog-input" value={typed} maxLength={80} onChange={event => setTyped(event.target.value)} onKeyDown={event => event.key === 'Enter' && answer(true)} />
+        )}
+        <div className="dialog-buttons">
+          <button className="secondary" onClick={() => answer(false)}>{current.no}</button>
+          <button ref={yes} className={current.danger ? 'primary is-danger' : 'primary'} onClick={() => answer(true)}>{current.yes}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------------------------
 // Small pieces
 
-function Banner({ children, tone = 'plain', onClose, icon }: { children: ReactNode, tone?: 'plain' | 'warn' | 'error' | 'good', onClose?: () => void, icon?: ReactNode }) {
+export function Banner({ children, tone = 'plain', onClose, icon }: { children: ReactNode, tone?: 'plain' | 'warn' | 'error' | 'good', onClose?: () => void, icon?: ReactNode }) {
   return (
     <div className={`banner banner-${tone}`}>
       <span className="banner-icon">{icon ?? (tone === 'error' || tone === 'warn' ? <CircleAlert size={16} /> : tone === 'good' ? <Check size={16} /> : <Info size={16} />)}</span>
@@ -172,7 +296,7 @@ function Banner({ children, tone = 'plain', onClose, icon }: { children: ReactNo
   )
 }
 
-function Empty({ icon, title, children }: { icon: ReactNode, title: string, children: ReactNode }) {
+export function Empty({ icon, title, children }: { icon: ReactNode, title: string, children: ReactNode }) {
   return (
     <div className="empty-state">
       <div className="empty-icon">{icon}</div>
@@ -265,7 +389,7 @@ function Field({ value, onSave, placeholder, label }: { value: string, onSave: (
   )
 }
 
-function Segmented<T extends string | number>({ value, options, onChange }: { value: T, options: [T, ReactNode][], onChange: (value: T) => void }) {
+export function Segmented<T extends string | number>({ value, options, onChange }: { value: T, options: [T, ReactNode][], onChange: (value: T) => void }) {
   return (
     <div className="segmented">
       {options.map(([option, label]) => (
@@ -327,9 +451,49 @@ function Timeline({ video, scenes, frame, tweaks, onSeek, onTweak }: {
     const box = bar.current!.getBoundingClientRect()
     return Math.round(Math.min(1, Math.max(0, (clientX - box.left) / box.width)) * (total - 1))
   }
-  // A tick a second, labelled every few, so the ruler never crowds.
-  const every = length > 90 ? 10 : length > 40 ? 5 : length > 15 ? 2 : 1
-  const ticks = Array.from({ length: Math.floor(length) + 1 }, (_, second) => second)
+  // Zoom: 1 fits the whole video; closer, the timeline scrolls sideways and follows the playhead.
+  const scroller = useRef<HTMLDivElement>(null)
+  const [zoom, setZoom] = useState(1)
+  const [visible, setVisible] = useState(800)
+  useEffect(() => {
+    const element = scroller.current
+    if (!element) {
+      return
+    }
+    const observer = new ResizeObserver(() => setVisible(element.clientWidth))
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+  // The most it zooms: about 120 pixels a second, so even a short scene is easy to grab.
+  const most = Math.max(1, Math.ceil((length * 120) / Math.max(1, visible)))
+  const zoomTo = (next: number) => {
+    const clamped = Math.min(most, Math.max(1, next))
+    setZoom(clamped)
+    // Keep the playhead in view at the new zoom.
+    requestAnimationFrame(() => {
+      const element = scroller.current
+      if (element) {
+        element.scrollLeft = (frame / total) * element.scrollWidth - element.clientWidth / 2
+      }
+    })
+  }
+  useEffect(() => {
+    const element = scroller.current
+    if (!element || zoom === 1) {
+      return
+    }
+    const x = (frame / total) * element.scrollWidth
+    if (x < element.scrollLeft + 40 || x > element.scrollLeft + element.clientWidth - 40) {
+      element.scrollLeft = x - element.clientWidth / 3
+    }
+  }, [frame, zoom, total])
+  // Ticks spaced by what fits: a small one at least 10 px apart, a labelled one at least 60 px.
+  const perSecond = (visible * zoom) / Math.max(length, 0.1)
+  const steps = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300]
+  const minor = steps.find(step => step * perSecond >= 10) ?? 300
+  const major = steps.find(step => step >= minor && step % minor === 0 && step * perSecond >= 60) ?? 300
+  const ticks = Array.from({ length: Math.floor(length / minor) + 1 }, (_, index) => Math.round(index * minor * 100) / 100)
+  const label = (second: number) => (length >= 60 ? `${Math.floor(second / 60)}:${String(Math.round(second % 60)).padStart(2, '0')}` : `${second}s`)
   const current = sceneAt(scenes, frame)
   const hasVoice = scenes.some(scene => scene.voice)
   // Rows: the ruler, the scenes, and the narrator when there is one.
@@ -337,13 +501,27 @@ function Timeline({ video, scenes, frame, tweaks, onSeek, onTweak }: {
   return (
     <div className="timeline">
       <div className="timeline-labels" style={rows}>
-        <span />
+        <span className="zoom">
+          <button onClick={() => zoomTo(zoom / 1.6)} disabled={zoom <= 1} title="Zoom out (⌘/Ctrl + scroll)"><Minus size={12} /></button>
+          <button onClick={() => zoomTo(1)} disabled={zoom === 1} title="See the whole video">Fit</button>
+          <button onClick={() => zoomTo(zoom * 1.6)} disabled={zoom >= most} title="Zoom in (⌘/Ctrl + scroll)"><Plus size={12} /></button>
+        </span>
         <span><Clapperboard size={13} /> Scenes</span>
         {hasVoice && <span><Mic size={13} /> Narrator</span>}
       </div>
       <div
+        className="timeline-scroll"
+        ref={scroller}
+        onWheel={event => {
+          if (event.metaKey || event.ctrlKey) {
+            event.preventDefault()
+            zoomTo(zoom * (event.deltaY < 0 ? 1.25 : 0.8))
+          }
+        }}
+      >
+      <div
         className="timeline-body"
-        style={rows}
+        style={{ ...rows, width: `${zoom * 100}%` }}
         ref={bar}
         onMouseMove={event => setHover(at(event.clientX))}
         onMouseLeave={() => setHover(null)}
@@ -368,8 +546,8 @@ function Timeline({ video, scenes, frame, tweaks, onSeek, onTweak }: {
       >
         <div className="ruler">
           {ticks.map(second => (
-            <span key={second} className={second % every === 0 ? 'tick is-major' : 'tick'} style={{ left: `${((second * video.fps) / total) * 100}%` }}>
-              {second % every === 0 && <em>{second}s</em>}
+            <span key={second} className={Math.abs(second / major - Math.round(second / major)) < 1e-6 ? 'tick is-major' : 'tick'} style={{ left: `${((second * video.fps) / total) * 100}%` }}>
+              {Math.abs(second / major - Math.round(second / major)) < 1e-6 && <em>{label(second)}</em>}
             </span>
           ))}
         </div>
@@ -382,6 +560,7 @@ function Timeline({ video, scenes, frame, tweaks, onSeek, onTweak }: {
               <div
                 key={index}
                 className={`clip ${index === current ? 'is-current' : ''} ${dragging?.index === index ? 'is-dragging' : ''}`}
+                title={`${scene.name} · ${seconds(scene.frames, video.fps)}`}
                 style={{ left: `${(scene.start / total) * 100}%`, width: `${((end + delta - scene.start) / total) * 100}%` }}
               >
                 <span>{scene.name}</span>
@@ -424,6 +603,201 @@ function Timeline({ video, scenes, frame, tweaks, onSeek, onTweak }: {
           </div>
         )}
       </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------------------------
+// The strip of scenes along the bottom: a picture of each at its fullest moment, its number, name
+// and length. Click one to go there.
+
+/** Pictures cost a drawing of the video each; a long video gets plain cards instead. */
+const MOST_PICTURES = 14
+
+/** Moving, duplicating, hiding and bringing back scenes, as changes to the video's arrangement. */
+function arrangeTools(scenes: Scene[], catalog: VideoDefinition['timeline']['catalog'], onArrange: (change: Arrange, label: string) => void) {
+  const order = scenes.map(scene => scene.number).filter((number): number is number => number !== null)
+  const hidden = catalog.filter(entry => entry.hidden).map(entry => entry.number)
+  const offset = scenes.length - order.length
+  const nameOf = (number: number) => catalog.find(entry => entry.number === number)?.name ?? `Scene ${number}`
+  return {
+    order,
+    hidden,
+    changed: catalog.length > 0 && (hidden.length > 0 || order.join() !== catalog.map(entry => entry.number).filter(number => !hidden.includes(number)).join()),
+    move(from: number, to: number) {
+      const next = [...order]
+      const [moved] = next.splice(from - offset, 1)
+      next.splice(Math.max(0, to - offset), 0, moved)
+      onArrange({ order: next }, `Moved “${nameOf(moved)}”`)
+    },
+    duplicate(index: number) {
+      const next = [...order]
+      next.splice(index - offset + 1, 0, next[index - offset])
+      onArrange({ order: next }, `Duplicated “${nameOf(next[index - offset])}”`)
+    },
+    hide(index: number) {
+      const number = order[index - offset]
+      // A copy is taken out of the order; the scene itself is hidden (and can be brought back).
+      if (order.filter(other => other === number).length > 1) {
+        const next = [...order]
+        next.splice(index - offset, 1)
+        onArrange({ order: next }, `Deleted a copy of “${nameOf(number)}”`)
+      } else if (order.length > 1) {
+        onArrange({ hidden: [...hidden, number] }, `Hid “${nameOf(number)}”`)
+      } else {
+        pushToast('plain', 'A video needs at least one scene.')
+      }
+    },
+    show(number: number) {
+      // Back where it was: after the last shown scene that came before it in code.
+      const next = order.filter(other => other !== number)
+      const after = next.reduce((spot, other, position) => (other < number ? position + 1 : spot), 0)
+      next.splice(after, 0, number)
+      onArrange({ hidden: hidden.filter(other => other !== number), order: next }, `Brought back “${nameOf(number)}”`)
+    },
+    reset() {
+      onArrange({ order: null, hidden: [] }, 'Back to the original order')
+    }
+  }
+}
+
+function Filmstrip({ video, scenes, current, onPick, onArrange }: { video: VideoDefinition, scenes: Scene[], current: number, onPick: (index: number) => void, onArrange: (change: Arrange, label: string) => void }) {
+  const strip = useRef<HTMLDivElement>(null)
+  const [dragged, setDragged] = useState<number | null>(null)
+  const [over, setOver] = useState<number | null>(null)
+  useEffect(() => {
+    strip.current?.querySelector('.film.is-current')?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+  }, [current])
+  const catalog = video.timeline.catalog ?? []
+  const tools = arrangeTools(scenes, catalog, onArrange)
+  const pictures = scenes.length <= MOST_PICTURES
+  const height = 74
+  const width = Math.round((height * video.width) / video.height)
+  return (
+    <div className="filmstrip" ref={strip}>
+      {scenes.map((scene, index) => {
+        const movable = scene.number !== null
+        return (
+          <div
+            key={`${scene.number}-${index}`}
+            className={`film ${index === current ? 'is-current' : ''} ${dragged === index ? 'is-dragged' : ''} ${over === index && dragged !== null && dragged !== index ? (dragged < index ? 'drop-after' : 'drop-before') : ''}`}
+            draggable={movable}
+            onDragStart={event => {
+              setDragged(index)
+              event.dataTransfer.effectAllowed = 'move'
+              event.dataTransfer.setData('text/plain', String(index))
+            }}
+            onDragOver={event => {
+              if (dragged !== null && movable) {
+                event.preventDefault()
+                setOver(index)
+              }
+            }}
+            onDragLeave={() => setOver(current => (current === index ? null : current))}
+            onDrop={event => {
+              event.preventDefault()
+              if (dragged !== null && dragged !== index && movable) {
+                tools.move(dragged, index)
+              }
+              setDragged(null)
+              setOver(null)
+            }}
+            onDragEnd={() => {
+              setDragged(null)
+              setOver(null)
+            }}
+          >
+            <button className="film-main" onClick={() => onPick(index)} title={movable ? `${scene.name} · ${seconds(scene.frames, video.fps)} · drag to move it` : `${scene.name} · ${seconds(scene.frames, video.fps)}`}>
+              <span className="film-picture" style={{ width, height }}>
+                {pictures && (
+                  <Thumbnail
+                    component={video.component}
+                    compositionWidth={video.width}
+                    compositionHeight={video.height}
+                    durationInFrames={video.durationInFrames}
+                    fps={video.fps}
+                    frameToDisplay={Math.min(scene.start + scene.frames - 1, scene.start + scene.enter + Math.round((scene.frames - scene.enter) * 0.55))}
+                    style={{ width, height }}
+                  />
+                )}
+                {!pictures && <span className="film-name">{scene.name}</span>}
+                <span className="film-number">{scene.number ?? '·'}</span>
+                {movable && <span className="film-grip"><GripVertical size={13} /></span>}
+              </span>
+              <span className="film-label"><strong>{scene.name}</strong> {seconds(scene.frames, video.fps)}</span>
+            </button>
+            {movable && (
+              <span className="film-tools">
+                <button title="Duplicate this scene" onClick={() => tools.duplicate(index)}><Copy size={13} /></button>
+                {tools.order.filter(number => number === scene.number).length > 1
+                  ? <button title="Delete this copy" className="danger" onClick={() => tools.hide(index)}><Trash2 size={13} /></button>
+                  : <button title="Hide this scene (you can bring it back)" onClick={() => tools.hide(index)}><EyeOff size={13} /></button>}
+              </span>
+            )}
+          </div>
+        )
+      })}
+      {catalog.filter(entry => entry.hidden).map(entry => (
+        <div key={`hidden-${entry.number}`} className="film is-hidden">
+          <button className="film-main" onClick={() => tools.show(entry.number)} title="Hidden: click to bring it back">
+            <span className="film-picture film-placeholder" style={{ width, height }}>
+              <EyeOff size={16} />
+              <span className="film-number">{entry.number}</span>
+            </span>
+            <span className="film-label"><strong>{entry.name}</strong> hidden</span>
+          </button>
+          <span className="film-tools is-shown"><button title="Bring it back" onClick={() => tools.show(entry.number)}><Eye size={13} /></button></span>
+        </div>
+      ))}
+      {tools.changed && (
+        <div className="film-reset">
+          <button className="pill-button" onClick={() => tools.reset()} title="Every scene back, in the order it was made"><RotateCcw size={13} /> Original order</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** The video's saved versions: go back to any of them. Each step back is itself undoable. */
+function VersionsPanel({ video, onUndo }: { video: VideoDefinition, onUndo: () => void }) {
+  const [data, setData] = useState<Versions | null>(null)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    api<Versions>(`/api/versions?video=${video.id}`).then(setData).catch(caught => setError(caught.message))
+  }, [video])
+  const back = async (version: Version) => {
+    if (!await ask('Go back to this version?', { text: `The video goes back to how it was before: ${version.label}. You can undo this too.`, yes: 'Go back' })) {
+      return
+    }
+    try {
+      await api('/api/versions/restore', { video: video.id, id: version.id })
+      pushToast('good', `Went back to before: ${version.label}`)
+    } catch (caught) {
+      pushToast('error', (caught as Error).message)
+    }
+  }
+  return (
+    <div className="tab">
+      <p className="lead">Every change you or Claude make saves how the video was just before it. Go back to any of them; going back is saved too, so it can be undone.</p>
+      <button className="secondary wide-secondary" onClick={onUndo}><Undo2 size={15} /> Undo the last change</button>
+      {error && <Banner tone="error">{error}</Banner>}
+      {data && data.versions.length === 0 && (
+        <Empty icon={<Clock size={22} />} title="No versions yet">A version is saved before each change, from the first one you make.</Empty>
+      )}
+      <ol className="versions">
+        {data?.versions.map(version => (
+          <li key={version.id} className={`version ${version.kind === 'restore' ? 'is-restore' : ''} ${data.cursor === version.id ? 'is-cursor' : ''}`}>
+            <span className={`version-who who-${version.who}`}>{version.who === 'claude' ? <Sparkles size={12} /> : <span>You</span>}</span>
+            <span className="version-body">
+              <span className="version-label">{version.kind === 'restore' ? version.label : `Before: ${version.label}`}</span>
+              <span className="version-time">{timeAgo(version.at)} · {new Date(version.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </span>
+            <button className="pill-button" onClick={() => back(version)}>Go back</button>
+          </li>
+        ))}
+      </ol>
+      {data && <p className="footnote">Kept for {data.keepDays} days, the last {data.keep} changes; older ones are deleted automatically. Changes to things every video shares (the video tools themselves) aren't part of a version.</p>}
     </div>
   )
 }
@@ -478,7 +852,7 @@ function LengthInput({ frames, fps, changed, floor, reason, onSet }: { frames: n
   )
 }
 
-function ScenesTab({ video, scenes, frame, tweaks, onSeek, onTweak, onNote }: {
+function ScenesTab({ video, scenes, frame, tweaks, onSeek, onTweak, onNote, onArrange }: {
   video: VideoDefinition
   scenes: Scene[]
   frame: number
@@ -486,7 +860,11 @@ function ScenesTab({ video, scenes, frame, tweaks, onSeek, onTweak, onNote }: {
   onSeek: (frame: number) => void
   onTweak: (scene: number, extra: number) => Promise<void>
   onNote: (scene: number) => void
+  onArrange: (change: Arrange, label: string) => void
 }) {
+  const catalog = video.timeline.catalog ?? []
+  const tools = arrangeTools(scenes, catalog, onArrange)
+  const chosen = Object.fromEntries(catalog.filter(entry => entry.transition).map(entry => [String(entry.number), entry.transition as string]))
   const current = sceneAt(scenes, frame)
   const half = Math.round(video.fps / 2)
   const tweak = (scene: number, extra: number) => onTweak(scene, extra).catch(caught => pushToast('error', caught.message))
@@ -498,11 +876,30 @@ function ScenesTab({ video, scenes, frame, tweaks, onSeek, onTweak, onNote }: {
           const extra = scene.number ? tweaks[String(scene.number)] ?? 0 : 0
           return (
             <li key={index} className={`scene-card ${index === current ? 'is-current' : ''}`}>
-              <button className="scene-main" onClick={() => onSeek(scene.start + Math.min(scene.enter, scene.frames - 1))}>
+              <button className="scene-main" onClick={() => onSeek(scene.start)}>
                 <span className="scene-number">{scene.number ?? '·'}</span>
                 <span className="scene-body">
                   <span className="scene-name">{scene.name}</span>
                   <span className="scene-meta">Starts at {clock(scene.start, video.fps)}</span>
+                  {scene.number !== null && (
+                    <span className="scene-transition" onClick={event => event.stopPropagation()}>
+                      Comes in with
+                      <select
+                        value={chosen[String(scene.number)] ?? ''}
+                        onChange={event => {
+                          const enter = { ...chosen }
+                          if (event.target.value) {
+                            enter[String(scene.number)] = event.target.value
+                          } else {
+                            delete enter[String(scene.number)]
+                          }
+                          onArrange({ enter }, `Transition into “${scene.name}”`)
+                        }}
+                      >
+                        {TRANSITION_NAMES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </span>
+                  )}
                   {scene.voice && <span className="scene-voice"><Mic size={12} /> “{scene.voice.text || scene.voice.line}”</span>}
                 </span>
               </button>
@@ -542,6 +939,10 @@ function ScenesTab({ video, scenes, frame, tweaks, onSeek, onTweak, onNote }: {
                       <RotateCcw size={14} />
                     </button>
                   )}
+                  {scene.number !== null && <button className="icon-button" title="Duplicate this scene" onClick={() => tools.duplicate(index)}><Copy size={14} /></button>}
+                  {scene.number !== null && (tools.order.filter(number => number === scene.number).length > 1
+                    ? <button className="icon-button danger" title="Delete this copy" onClick={() => tools.hide(index)}><Trash2 size={14} /></button>
+                    : <button className="icon-button" title="Hide this scene (bring it back from the strip below)" onClick={() => tools.hide(index)}><EyeOff size={14} /></button>)}
                   <button className="icon-button" title="Leave a note on this scene" onClick={() => onNote(index)}><MessageSquare size={14} /></button>
                 </div>
               </div>
@@ -735,7 +1136,14 @@ function VoiceTab({ folder, recording }: { folder: Folder | undefined, recording
   )
 }
 
-const QUICK = ['This part is too fast to read.', 'Make this punchier.', 'Hold this a little longer.', 'Show a different screen here.', 'Change the words here to: ']
+// Short labels for notes people often write; a click adds the whole sentence.
+const QUICK = [
+  ['Too fast to read', 'This part is too fast to read.'],
+  ['Punchier', 'Make this punchier.'],
+  ['Hold longer', 'Hold this a little longer.'],
+  ['Different screen', 'Show a different screen here.'],
+  ['New words…', 'Change the words here to: ']
+]
 
 function Answer({ onSend }: { onSend: (answer: string) => Promise<void> }) {
   const [text, setText] = useState('')
@@ -801,53 +1209,24 @@ function NotesTab({ video, scenes, frame, notes, listening, preset, onSeek, onPr
       pushToast('error', (caught as Error).message)
     }
   }
-  const mine = notes.filter(note => note.video === video.id || !note.video).slice().reverse()
+  const mine = notes.filter(note => note.video === video.id || !note.video)
+  const thread = useRef<HTMLDivElement>(null)
+  // The conversation reads top to bottom, newest at the bottom, like a chat.
+  useEffect(() => {
+    thread.current?.scrollTo({ top: thread.current.scrollHeight, behavior: 'smooth' })
+  }, [mine.length, mine.at(-1)?.status])
   return (
-    <div className="tab">
+    <div className="tab tab-chat">
       <div className={`listening ${listening ? 'is-on' : ''}`}>
         <span className="pulse" />
         {listening
           ? <span><strong>Claude is listening.</strong> Notes are picked up within seconds; the preview updates when the change is made.</span>
           : <span><strong>Claude isn't listening right now.</strong> Your notes are saved: back in Claude Code, say “apply my notes”.</span>}
       </div>
-      <div className="card composer">
-        <Segmented
-          value={scope}
-          onChange={value => {
-            setScope(value)
-            setChosen(null)
-          }}
-          options={[
-            ['moment', `At ${clock(frame, video.fps)}`],
-            ['scene', scene.name],
-            ['video', 'Whole video']
-          ]}
-        />
-        <textarea
-          ref={box}
-          rows={3}
-          value={text}
-          placeholder="Tell Claude what to change, as you'd tell an editor: “the logo should land on the beat”, “use the dashboard screen here”…"
-          onChange={event => setText(event.target.value)}
-          onKeyDown={event => {
-            if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-              event.preventDefault()
-              send()
-            }
-          }}
-        />
-        <div className="chips">
-          {QUICK.map(quick => <button key={quick} className="chip" onClick={() => setText(current => (current ? `${current} ${quick}` : quick))}>{quick.replace(/: $/, '…')}</button>)}
-        </div>
-        <div className="composer-foot">
-          <span className="footnote">⌘/Ctrl+Enter sends</span>
-          <button className="primary" disabled={!text.trim()} onClick={send}><Send size={14} /> Send to Claude</button>
-        </div>
-      </div>
-      <div className="thread">
+      <div className="thread" ref={thread}>
         {mine.length === 0 && (
           <Empty icon={<MessageSquare size={22} />} title="No notes yet">
-            Pause on the moment you want changed and describe it. Claude makes the change and the preview updates.
+            Pause on the moment you want changed and describe it below. Claude makes the change and the preview updates.
           </Empty>
         )}
         {mine.map(note => (
@@ -886,6 +1265,42 @@ function NotesTab({ video, scenes, frame, notes, listening, preset, onSeek, onPr
             )}
           </div>
         ))}
+      </div>
+      <div className="composer">
+        <Segmented
+          value={scope}
+          onChange={value => {
+            setScope(value)
+            setChosen(null)
+          }}
+          options={[
+            ['moment', `At ${clock(frame, video.fps)}`],
+            ['scene', scene.name],
+            ['video', 'Whole video']
+          ]}
+        />
+        <div className="chips quick-chips">
+          {QUICK.map(([label, quick]) => <button key={label} className="chip" onClick={() => setText(current => (current ? `${current} ${quick}` : quick))}>{label}</button>)}
+        </div>
+        <div className="composer-box">
+          <textarea
+            ref={box}
+            rows={3}
+            value={text}
+            placeholder="What should change? e.g. “Hold the headline a second longer, then bring the card in from the right.”"
+            onChange={event => setText(event.target.value)}
+            onKeyDown={event => {
+              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                event.preventDefault()
+                send()
+              }
+            }}
+          />
+          <div className="composer-foot">
+            <span className="footnote">⌘/Ctrl+Enter to send</span>
+            <button className="primary" disabled={!text.trim()} onClick={send}>Send</button>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -950,8 +1365,8 @@ function SaveTo({ value, onChange, disabled }: { value: Destination, onChange: (
   )
 }
 
-function ExportTab({ video, state, onStart, onState }: { video: VideoDefinition, state: ExportState, onStart: (quick: boolean, to: string | null) => Promise<void>, onState: (state: ExportState) => void }) {
-  const [quick, setQuick] = useState(true)
+function ExportTab({ video, state, onStart, onState }: { video: VideoDefinition, state: ExportState, onStart: (mode: ExportMode, to: string | null) => Promise<void>, onState: (state: ExportState) => void }) {
+  const [mode, setMode] = useState<ExportMode>('quick')
   const [to, setTo] = useState<Destination>(() => {
     try {
       return JSON.parse(localStorage.getItem(SAVED_TO) ?? '') as Destination
@@ -970,7 +1385,7 @@ function ExportTab({ video, state, onStart, onState }: { video: VideoDefinition,
   const bin = navigator.platform.startsWith('Win') ? 'Recycle Bin' : 'Trash'
   const remove = async (files: string[]) => {
     const names = files.map(file => file.split(/[\\/]/).pop()).join(', ')
-    if (!confirm(files.length > 1 ? `Move all ${files.length} files of this export to the ${bin}?` : `Move ${names} to the ${bin}?`)) {
+    if (!await ask(files.length > 1 ? `Delete all ${files.length} files of this export?` : `Delete ${names}?`, { text: `They go to the ${bin}, so you can still get them back from there.`, yes: 'Delete', danger: true })) {
       return
     }
     try {
@@ -986,30 +1401,29 @@ function ExportTab({ video, state, onStart, onState }: { video: VideoDefinition,
     <div className="tab">
       <p className="lead">Make the finished video files from what you see now: the same render Claude uses, with a check for glitches at the end.</p>
       <div className="options">
-        <button className={`option ${quick ? 'is-on' : ''}`} disabled={state.running} onClick={() => setQuick(true)}>
-          <span className="radio" />
-          <span>
-            <strong>Quick draft</strong>
-            <em>1080p only, in about a quarter of the time. To watch it properly or share a draft.</em>
-          </span>
-        </button>
-        <button className={`option ${!quick ? 'is-on' : ''}`} disabled={state.running} onClick={() => setQuick(false)}>
-          <span className="radio" />
-          <span>
-            <strong>Final</strong>
-            <em>4K and 1080p, a poster and a thumbnail. 3D-heavy videos take a while at 4K.</em>
-          </span>
-        </button>
+        {([
+          ['quick', 'Quick · 1080p', 'The fastest, about a quarter of the time. For LinkedIn, Slack, email, or a draft to share.'],
+          ['4k', '4K', 'Only the 4K file, the sharpest: for your website, YouTube and big screens. 3D-heavy videos take a while.'],
+          ['full', 'Full', 'Both, 4K and 1080p, plus a poster and a thumbnail: everything for publishing.']
+        ] as [ExportMode, string, string][]).map(([value, title, text]) => (
+          <button key={value} className={`option ${mode === value ? 'is-on' : ''}`} disabled={state.running} onClick={() => setMode(value)}>
+            <span className="radio" />
+            <span>
+              <strong>{title}</strong>
+              <em>{text}</em>
+            </span>
+          </button>
+        ))}
       </div>
       <SaveTo value={to} onChange={choose} disabled={state.running} />
-      <button className="primary wide" disabled={state.running || (to.kind !== 'video' && !to.path.trim())} onClick={() => onStart(quick, to.kind === 'video' ? null : to.path.trim()).catch(caught => pushToast('error', caught.message))}>
+      <button className="primary wide" disabled={state.running || (to.kind !== 'video' && !to.path.trim())} onClick={() => onStart(mode, to.kind === 'video' ? null : to.path.trim()).catch(caught => pushToast('error', caught.message))}>
         {state.running ? <LoaderCircle size={15} className="spin" /> : <Download size={15} />} {state.running ? 'Exporting…' : `Export ${video.id}`}
       </button>
       {state.running && (
         <div className="card progress">
           <div className="progress-top">
             <strong>{percent}%</strong>
-            <span>{state.id} · {state.quick ? 'quick draft' : 'final'}</span>
+            <span>{state.id} · {{ quick: 'quick, 1080p', '4k': '4K', full: 'full' }[state.mode ?? 'full']}</span>
           </div>
           <div className="progress-bar"><div style={{ width: `${Math.max(2, percent)}%` }} /></div>
           <p className="footnote">{detail || 'Starting…'}</p>
@@ -1056,6 +1470,7 @@ function Shortcuts({ onClose }: { onClose: () => void }) {
     ['[ / ]', 'Previous or next scene'],
     ['M', 'Sound off or on'],
     ['F', 'Full screen'],
+    ['⌘/Ctrl + Z', 'Undo the last change'],
     ['⌘/Ctrl + Enter', 'Save a text box, send a note'],
     ['Esc', 'Undo the text box you’re in']
   ]
@@ -1077,7 +1492,11 @@ function Room() {
   const start = kept()
   const initial = (location.hash.slice(1) || start.id) ?? ''
   const [id, setId] = useState(() => (VIDEOS.some(video => video.id === initial) ? initial : VIDEOS[0]?.id ?? ''))
-  const [tab, setTab] = useState<Tab>(start.tab ?? 'scenes')
+  // Opening the editor starts on the Claude tab; only a reload to show a change keeps the tab you were on.
+  const [tab, setTab] = useState<Tab>(start.reloading && start.tab ? start.tab : 'notes')
+  useEffect(() => {
+    keep({ reloading: false })
+  }, [])
   const [frame, setFrame] = useState(start.frame ?? 0)
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
@@ -1093,6 +1512,9 @@ function Room() {
   const [recording, setRecording] = useState(false)
   const [exporting, setExporting] = useState<ExportState>({ running: false })
   const player = useRef<PlayerRef>(null)
+  // "This scene" plays and loops just the scene being worked on; "Whole video" plays it all.
+  const [range, setRange] = useState<'scene' | 'video'>('video')
+  const [focus, setFocus] = useState(0)
   const video = VIDEOS.find(entry => entry.id === id) ?? VIDEOS[0]
   const scenes = useMemo(() => (video ? scenesOf(video) : []), [video])
   const baseId = video?.timeline.baseId ?? id
@@ -1131,20 +1553,20 @@ function Room() {
 
   const reload = useCallback(() => {
     const recent = lastToast && Date.now() - lastToast.at < 4000 ? lastToast.text : 'Preview updated'
-    keep({ id, tab, frame: player.current?.getCurrentFrame() ?? frame, playing: player.current?.isPlaying() ?? false, toast: recent })
+    keep({ id, tab, frame: player.current?.getCurrentFrame() ?? frame, playing: player.current?.isPlaying() ?? false, toast: recent, reloading: true })
     location.reload()
   }, [id, tab, frame])
 
   // The server tells the page when the video changed (the page reloads to show it), broke, or closed.
   useEffect(() => {
-    const events = new EventSource('/api/events')
-    events.addEventListener('hello', event => {
+    const events = serverEvents()
+    events.on('hello', event => {
       const data = JSON.parse((event as MessageEvent).data)
       if (data.error) {
         setStatus({ tone: 'error', text: data.error })
       }
     })
-    events.addEventListener('rebuilt', () => {
+    events.on('rebuilt', () => {
       if (typing()) {
         setWaitingReload(true)
         setStatus({ tone: 'busy', text: 'Updates when you leave the text box' })
@@ -1153,21 +1575,20 @@ function Room() {
         reload()
       }
     })
-    events.addEventListener('broken', event => {
+    events.on('broken', event => {
       setStatus({ tone: 'error', text: JSON.parse((event as MessageEvent).data).error })
     })
-    events.addEventListener('notes', loadNotes)
-    events.addEventListener('export', loadExport)
-    events.addEventListener('voice', event => {
+    events.on('notes', loadNotes)
+    events.on('export', loadExport)
+    events.on('voice', event => {
       const data = JSON.parse((event as MessageEvent).data)
       setRecording(data.recording)
       if (data.error) {
         pushToast('error', `The voice couldn't be recorded: ${data.error}`)
       }
     })
-    events.addEventListener('closed', () => setStatus({ tone: 'closed', text: 'Closed' }))
-    events.onerror = () => setStatus(current => (current.tone === 'closed' ? current : { tone: 'lost', text: 'Not connected' }))
-    events.onopen = () => setStatus(current => (current.tone === 'lost' ? { tone: 'idle', text: 'Up to date' } : current))
+    events.on('closed', () => setStatus({ tone: 'closed', text: 'Closed' }))
+    events.onState(() => setStatus(current => (current.tone === 'lost' ? { tone: 'idle', text: 'Up to date' } : current)), () => setStatus(current => (current.tone === 'closed' ? current : { tone: 'lost', text: 'Not connected' })))
     return () => events.close()
   }, [reload, loadNotes, loadExport])
 
@@ -1205,17 +1626,27 @@ function Room() {
 
   const seek = useCallback((to: number) => {
     const clamped = Math.max(0, Math.min(video.durationInFrames - 1, to))
-    player.current?.seekTo(clamped)
+    // The scene it lands in becomes the one being worked on; in "This scene" the player's range
+    // moves there first, then the seek happens inside it.
+    setFocus(sceneAt(scenes, clamped))
     setFrame(clamped)
-  }, [video])
+    requestAnimationFrame(() => player.current?.seekTo(clamped))
+  }, [video, scenes])
 
-  const current = sceneAt(scenes, frame)
+  const current = range === 'scene' ? Math.min(focus, scenes.length - 1) : sceneAt(scenes, frame)
+  // A scene's own length, its exit into the next one included (the same length the panel shows).
+  const sceneEnd = (index: number) => Math.min(video.durationInFrames - 1, scenes[index].start + scenes[index].frames - 1)
   const previousScene = () => seek(frame > scenes[current].start + 10 || !scenes[current - 1] ? scenes[current].start : scenes[current - 1].start)
   const nextScene = () => scenes[current + 1] && seek(scenes[current + 1].start)
 
   // Keys, when not typing.
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
+      if (!typing() && (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
+        event.preventDefault()
+        undo()
+        return
+      }
       if (typing() || event.metaKey || event.ctrlKey || event.altKey) {
         return
       }
@@ -1265,27 +1696,49 @@ function Room() {
     return <Empty icon={<Clapperboard size={24} />} title="No videos yet">There are no videos in this studio yet. Ask Claude to make one first.</Empty>
   }
 
-  const tweaks = project?.tweaks[baseId] ?? {}
+  const tweaks = lengthsOf(project?.tweaks[baseId])
+  const nameOfNumber = (number: number) => video.timeline.catalog?.find(entry => entry.number === number)?.name ?? `Scene ${number}`
   const tweakScene = async (scene: number, extra: number) => {
-    const data = await api<{ tweaks: Project['tweaks'] }>('/api/tweak', { id: baseId, scene, extra })
+    const data = await api<{ tweaks: Project['tweaks'] }>('/api/tweak', { id: baseId, scene, extra, label: `Length of “${nameOfNumber(scene)}”` })
     setProject(currentProject => (currentProject ? { ...currentProject, tweaks: data.tweaks } : currentProject))
+  }
+  const undo = () => {
+    api<{ undone: string }>('/api/versions/undo', { video: video.id })
+      .then(data => pushToast('good', `Undid: ${data.undone}`))
+      .catch(caught => pushToast('plain', caught.message))
+  }
+  const rename = async () => {
+    const current = (project?.tweaks[baseId] as { name?: string } | undefined)?.name || video.timeline.title
+    const name = await askText('Rename this video', { value: current, text: 'The name you see here. The video itself doesn’t change.' })
+    if (name !== null && name !== current) {
+      arrangeScenes({ name }, `Name: ${name || 'its own'}`)
+    }
+  }
+  const arrangeScenes = (change: Arrange, label: string) => {
+    api<{ tweaks: Project['tweaks'] }>('/api/arrange', { id: baseId, ...change, label })
+      .then(data => {
+        setProject(currentProject => (currentProject ? { ...currentProject, tweaks: data.tweaks } : currentProject))
+        pushToast('good', `${label} · the preview updates in a moment`)
+      })
+      .catch(caught => pushToast('error', caught.message))
   }
   const open = notes.filter(note => (note.video === video.id || !note.video) && ['new', 'working', 'question'].includes(note.status)).length
   const exportPercent = Number(/^(\d+)%/.exec(exporting.progress ?? '')?.[1] ?? 0)
   const TABS: [Tab, ReactNode, string, ReactNode?][] = [
+    ['notes', <Sparkles key="n" size={15} />, 'Claude', open ? <span className="count">{open}</span> : undefined],
     ['scenes', <LayoutList key="s" size={15} />, 'Scenes'],
     ['words', <Type key="w" size={15} />, 'Words'],
-    ['voice', <Mic key="v" size={15} />, 'Voice', recording ? <LoaderCircle size={12} className="spin" /> : undefined],
-    ['notes', <MessageSquare key="n" size={15} />, 'Notes', open ? <span className="count">{open}</span> : undefined]
+    ['voice', <Mic key="v" size={15} />, 'Voice', recording ? <LoaderCircle size={12} className="spin" /> : undefined]
   ]
   return (
     <div className="room">
       <header className="top">
-        <div className="brand"><span className="brand-mark"><Clapperboard size={15} /></span>Edit room</div>
+        <div className="brand"><span className="brand-mark"><Clapperboard size={14} /></span>Video Kit</div>
         <div className="video-pick">
           <select value={id} onChange={event => setId(event.target.value)} title="Which video">
-            {VIDEOS.map(entry => <option key={entry.id} value={entry.id}>{entry.id}</option>)}
+            {VIDEOS.map(entry => <option key={entry.id} value={entry.id}>{titleOf(entry, project?.tweaks)}</option>)}
           </select>
+          <button className="icon-button" title="Rename this video" onClick={rename}><Pencil size={14} /></button>
           <span>{video.width}×{video.height} · {seconds(video.durationInFrames, video.fps)}</span>
         </div>
         <span className={`status status-${status.tone}`} title={status.text}>
@@ -1293,16 +1746,18 @@ function Room() {
           {status.tone === 'error' ? 'Preview can’t update' : status.text}
         </span>
         <div className="spacer" />
+        <button className="secondary" title="Undo the last change (⌘/Ctrl+Z)" onClick={undo}><Undo2 size={15} /> Undo</button>
+        <button className={`secondary ${tab === 'versions' ? 'is-on' : ''}`} title="Every saved version of this video" onClick={() => setTab(tab === 'versions' ? 'notes' : 'versions')}><Clock size={15} /> Versions</button>
         <button className="icon-button" title="Keyboard shortcuts (?)" onClick={() => setShortcuts(true)}><Keyboard size={17} /></button>
-        <button className={`secondary ${tab === 'export' ? 'is-on' : ''}`} onClick={() => setTab(tab === 'export' ? 'scenes' : 'export')} title="Make the finished video files">
+        <button className={`dark ${tab === 'export' ? 'is-on' : ''}`} onClick={() => setTab(tab === 'export' ? 'notes' : 'export')} title="Make the finished video files">
           {exporting.running ? <LoaderCircle size={15} className="spin" /> : <Download size={15} />}
           {exporting.running ? `Exporting ${exportPercent}%` : 'Export'}
         </button>
         <button
           className="icon-button"
-          title="Close the edit room"
+          title="Close the editor"
           onClick={async () => {
-            if (confirm('Everything is saved already. Close the edit room?')) {
+            if (await ask('Close the editor?', { text: 'Everything is saved already. Ask Claude to open it again any time.', yes: 'Close' })) {
               await api('/api/close', {}).catch(() => {})
               setStatus({ tone: 'closed', text: 'Closed' })
             }
@@ -1328,12 +1783,19 @@ function Room() {
             <pre>{status.text}</pre>
           </Banner>
         )}
-        {status.tone === 'closed' && <Banner tone="warn">The edit room is closed. Your changes are saved; you can close this tab. To open it again, ask Claude for the edit room.</Banner>}
-        {status.tone === 'lost' && <Banner tone="warn">Lost the connection to the edit room. If it was closed, ask Claude to open it again; your changes are saved.</Banner>}
+        {status.tone === 'closed' && <Banner tone="warn">The editor is closed. Your changes are saved; you can close this tab. To open it again, ask Claude for the editor.</Banner>}
+        {status.tone === 'lost' && <Banner tone="warn">Lost the connection to the editor. If it was closed, ask Claude to open it again; your changes are saved.</Banner>}
       </div>
 
       <main className="main">
         <section className="stage">
+          <div className="crumb">
+            {scenes[current]?.number !== null && scenes[current]?.number !== undefined
+              ? <strong>Scene {scenes[current].number} of {scenes.filter(scene => scene.number !== null).length}</strong>
+              : <strong>Cover</strong>}
+            {scenes[current]?.number !== null && <span> · {scenes[current]?.name}</span>}
+            <span> · {seconds(scenes[current]?.frames ?? 0, video.fps)}</span>
+          </div>
           <div className="screen-wrap">
             <div className="screen" style={{ ['--ratio' as string]: video.width / video.height }}>
               <Player
@@ -1346,7 +1808,9 @@ function Room() {
                 compositionHeight={video.height}
                 style={{ width: '100%', height: '100%' }}
                 playbackRate={rate}
-                loop={loop}
+                loop={loop || range === 'scene'}
+                inFrame={range === 'scene' ? scenes[current]?.start ?? null : null}
+                outFrame={range === 'scene' ? sceneEnd(current) : null}
                 clickToPlay
                 doubleClickToFullscreen
                 spaceKeyToPlayOrPause={false}
@@ -1356,8 +1820,17 @@ function Room() {
           </div>
           <div className="controls">
             <div className="controls-left">
-              <span className="time"><strong>{clock(frame, video.fps)}</strong> / {clock(video.durationInFrames, video.fps)}</span>
-              <span className="scene-now">{scenes[current]?.name}</span>
+              <Segmented
+                value={range}
+                onChange={value => {
+                  setRange(value)
+                  setFocus(sceneAt(scenes, frame))
+                }}
+                options={[['scene', <span key="s" title="Play only the scene you're on, over and over">Loop scene</span>], ['video', <span key="v" title="Play the whole video, start to end">Whole video</span>]]}
+              />
+              {range === 'scene'
+                ? <span className="time"><strong>{((frame - (scenes[current]?.start ?? 0)) / video.fps).toFixed(2)}</strong> / {((scenes[current] ? sceneEnd(current) + 1 - scenes[current].start : 0) / video.fps).toFixed(2)}s</span>
+                : <span className="time"><strong>{clock(frame, video.fps)}</strong> / {clock(video.durationInFrames, video.fps)}</span>}
             </div>
             <div className="controls-center">
               <button className="icon-button" onClick={previousScene} title="Previous scene ([)"><SkipBack size={17} /></button>
@@ -1375,14 +1848,15 @@ function Room() {
           </div>
           <Timeline video={video} scenes={scenes} frame={frame} tweaks={tweaks} onSeek={seek} onTweak={tweakScene} />
         </section>
+        <Filmstrip video={video} scenes={scenes} current={current} onArrange={arrangeScenes} onPick={index => seek(scenes[index].start)} />
 
         <aside className="panel">
-          {tab === 'export'
+          {tab === 'export' || tab === 'versions'
             ? (
                 <div className="panel-head">
-                  <Download size={15} /> <strong>Export</strong>
+                  {tab === 'export' ? <Download size={15} /> : <Clock size={15} />} <strong>{tab === 'export' ? 'Export' : 'Versions'}</strong>
                   <div className="spacer" />
-                  <button className="icon-button" title="Back to editing" onClick={() => setTab('scenes')}><X size={15} /></button>
+                  <button className="icon-button" title="Back to editing" onClick={() => setTab('notes')}><X size={15} /></button>
                 </div>
               )
             : (
@@ -1406,6 +1880,7 @@ function Room() {
                 setNotePreset(index)
                 setTab('notes')
               }}
+              onArrange={arrangeScenes}
             />
           )}
           {tab === 'words' && <WordsTab folder={folder} language={language} />}
@@ -1423,13 +1898,14 @@ function Room() {
               onNotes={setNotes}
             />
           )}
+          {tab === 'versions' && <VersionsPanel video={video} onUndo={undo} />}
           {tab === 'export' && (
             <ExportTab
               video={video}
               state={exporting}
               onState={setExporting}
-              onStart={async (quick, to) => {
-                setExporting(await api<ExportState>('/api/export', { id: video.id, quick, to }))
+              onStart={async (mode, to) => {
+                setExporting(await api<ExportState>('/api/export', { id: video.id, mode, to }))
                 pushToast('plain', 'Export started')
               }}
             />
@@ -1437,9 +1913,53 @@ function Room() {
         </aside>
       </main>
       {shortcuts && <Shortcuts onClose={() => setShortcuts(false)} />}
-      <Toasts />
+
     </div>
   )
 }
 
-createRoot(document.getElementById('room')!).render(<Room />)
+/**
+ * The page: the guided flow while a video is being made (a session that hasn't reached the editor
+ * yet), the editor otherwise. When Claude hands over to the editor, the page reloads into it, so
+ * the newly built video is there.
+ */
+function App() {
+  const [state, setState] = useState<{ session: Session | null, listening: boolean } | null>(null)
+  const stage = useRef<string | null>(null)
+  useEffect(() => {
+    const load = () => api<{ session: Session | null, listening: boolean }>('/api/session').then(next => {
+      const was = stage.current
+      stage.current = next.session?.stage ?? null
+      if (was && was !== 'editor' && next.session?.stage === 'editor') {
+        if (next.session.videoId) {
+          keep({ id: next.session.videoId, tab: 'notes', frame: 0 })
+          history.replaceState(null, '', `#${next.session.videoId}`)
+        }
+        location.reload()
+        return
+      }
+      setState(next)
+    }).catch(() => setState(current => current ?? { session: null, listening: false }))
+    load()
+    const events = serverEvents()
+    events.on('session', load)
+    const timer = setInterval(load, 3000)
+    return () => {
+      events.close()
+      clearInterval(timer)
+    }
+  }, [])
+  if (!state) {
+    return null
+  }
+  const studio = state.session && state.session.stage !== 'editor'
+  return (
+    <>
+      {studio ? <Studio session={state.session!} listening={state.listening} /> : <Room />}
+      <Toasts />
+      <Dialog />
+    </>
+  )
+}
+
+createRoot(document.getElementById('room')!).render(<App />)

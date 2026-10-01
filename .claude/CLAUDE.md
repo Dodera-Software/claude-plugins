@@ -36,19 +36,22 @@ skills/make/SKILL.md              the workflow Claude follows: brief (questionna
 skills/website/SKILL.md           /video-kit:website: asks for the address, then the make workflow in website mode
 skills/changelog/                 /video-kit:changelog (what's-new videos from recent changes) and release-video.yml, a GitHub Action template
 skills/voiceover/SKILL.md         /video-kit:voiceover: a narrator for an existing video, or a new video with one
-skills/make/references/*.md       details SKILL.md points to: interview (the directed brief), scenes, product-scenes, 3d, style, pacing, audio, voice, brand, recipes, capture, website
+skills/make/references/*.md       details SKILL.md points to: direction (inventing each video), browser (the guided flow), interview (the directed brief), scenes, product-scenes, 3d, style, pacing, audio, voice, brand, recipes, capture, website
 skills/make/template/             the studio copied into a product repo as video/
   src/kit/                        shared: motion helpers, brand context, components, scenes, transitions, defineVideo
   src/kit/three/                  depth: cameraAt, Space/Place (DOM in 3D), Stage3D/Logo3D (three.js)
   src/brands/acme/                example brand (tokens, logo, Brand object)
   src/videos/acme-teaser/         example video built only from kit scenes
   render.sh                       every render goes through this: hands the command to scripts/render.mjs
-  src/room/                       the edit room's page (Remotion Player + panels); scripts/room.mjs serves it
+  src/room/                       the page scripts/room.mjs serves: main.tsx (the editor) and studio.tsx (the guided flow)
   src/tweaks.json                 scene lengths changed in the edit room, by video id and scene number
   scripts/                        render.mjs (Docker, on macOS, Windows and Linux), finish.mjs (previews, glitch scan),
                                   room.mjs (the edit room's server), notes.mjs (Claude's side of its notes),
+                                  versions.mjs (Undo and versions), brands.mjs (brands saved on the computer),
+                                  session.mjs (the guided flow's two-way channel with Claude),
                                   timeline.mjs, capture.mjs (screenshots and recordings), clip.mjs (people's own
-                                  recordings), site.mjs
+                                  recordings), site.mjs, reference.mjs (watching a reference: a link or file → frames,
+                                  temporary; `list` reads a gallery)
   fonts.conf                      makes Inter answer for system fonts in captures
   voice/                          the voice engine (Kokoro, kokoro-js), installed apart from the video app by scripts/voice.mjs
 ```
@@ -220,9 +223,40 @@ bundled ffmpeg (it has no `fps` filter; use `-r`):
   `scripts/notes.mjs watch`, whose heartbeat is how the page knows Claude is listening. Export runs
   `render.mjs` as Claude would. Check the page with headless Chrome and puppeteer-core, not only
   the type check: a render that works can still fail in the Player.
+- **The guided flow is the same workflow, another face.** `scripts/session.mjs` keeps
+  `video/session.json`: the page writes what the person does to its inbox, `session.mjs watch`
+  hands it to Claude (and the editor's notes too, so one watcher serves the whole session), and
+  Claude's commands (`suggest`, `steps`, `say`, `ask`, `storyboard`, `stills`, `editor`) change what
+  the page shows. The page shows the studio until the stage is `editor`, then reloads into the
+  editor for the built video. The skill asks "in your browser or here in the chat?" first;
+  references/browser.md is Claude's side. Sessions untouched 30 days are cleared with their files.
+- **Versions never pile up.** `scripts/versions.mjs` saves a video's own files (its folder, its
+  entries in `src/tweaks.json`, its voice recordings) before every change from the editor and
+  before each note Claude works on, stored once by content in `video/.versions/` (git-ignored).
+  It keeps the last 30 per video and nothing older than 7 days, pruning on every save and when the
+  editor opens, and drops the versions of videos that no longer exist. Undo walks back one change
+  at a time (a cursor, reset by the next change); going back is itself saved.
+- **The editor's arrangement is data, not code.** Order, hidden scenes, duplicates and a transition
+  chosen by name live in `src/tweaks.json` (`{ lengths, order, hidden, enter }` per video id; the
+  older plain-lengths form is still read), keyed by each scene's own number, so changes follow a
+  scene wherever it moves. A `grow` (`SceneTransition.kind`) only works after the scene it grows
+  out of, so moved elsewhere it becomes a `dip`. Only transitions that don't depend on the previous
+  scene are offered by name.
+- **Brands are remembered only when the person says yes**, in `~/.video-kit/brands/<slug>/` (the
+  brand folder plus the public/ files its code names), until they ask to forget it.
 - **The quality bar is in the skill**, not only in reviews: style.md's "never AI slop" checklist
   runs before stills are shown, and the directed interview (references/interview.md) exists
   because the person's vision, not the tool, is what makes a video good.
+- **Every video is invented, not assembled.** Videos built from the kit's scene list all came out
+  the same (chat pile-up, word swap, steps, list, end card), and a pixel-art reference the person
+  gave produced none of its style, because the link was read as a page, never watched.
+  direction.md makes Claude watch references (`reference.mjs`), look for inspiration (the
+  skillry.dev gallery, the web), pitch three directions with pictures (`session.mjs ideas` in the
+  browser) and write the scenes from scratch; kit scenes are fallbacks, one or two at most. Don't
+  add rules or examples that push the storyboard back toward the kit's list.
+- **Downloads don't stay.** A studied reference's video is deleted as soon as its frames are out;
+  frames live in the system's temporary folder, a day at most, and `reference.mjs clean` after
+  the direction is chosen.
 - **No sound effects, no music.** The kit shipped CC0 clicks and pops until 0.12; the owner removed
   them ("they sound cheap and don't help"). A video is silent or narrated; don't add sounds back.
 - **Remotion** needs a company licence for companies over three people; the READMEs say so.

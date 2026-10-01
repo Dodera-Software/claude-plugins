@@ -95,11 +95,30 @@ first? Ask for "just the quick one": 1080p only, in about a quarter of the time.
 
 Give notes like a director ("this part is too fast", "make the ending punchier") and it redoes them.
 
-**Watch and tweak it live.** Ask for the edit room (Claude offers it too) and the video opens in
-your browser, playing live. Jump between scenes, change any word on screen, make a scene hold
-longer, rewrite what the narrator says and hear it again, leave a note for Claude on the exact
-moment ("the logo should land here"), and export when you're happy. It runs only on your computer
-and only while it's open; heavy 3D can stutter in the preview, never in the finished video.
+**Every video is made for you, not from a template.** Claude watches the videos you say you like
+(a link or a file), looks for inspiration when you have none, and before the storyboard shows you
+three different directions, with pictures, to pick from: a hand-drawn story, a pixel-art game, a
+cinematic 3D film, whatever suits your product. Then it draws that video from scratch, around your
+brand.
+
+**Make it in your browser, step by step.** When you start, Claude asks whether you'd like to work
+in the chat or in your browser. In the browser, a guided page walks you through it: pick what
+you're making, who it's for and the one thing they should remember (with suggestions from your
+product), paste videos you like and say what you like about them (or ask for ideas), see the looks playing, hear the
+narrator voices, pick one of three directions, then review the storyboard and the key moments before anything is made, and
+finish in the editor. Claude does the work in the background and talks to you on the page.
+
+**Watch and tweak it live.** Before making the video, Claude offers the editor: the video opens in
+your browser, playing live. Jump between scenes or loop just one, change any word on screen, make a
+scene longer or shorter (drag its end on the timeline), drag scenes into a new order, duplicate or
+hide one, pick how a scene comes in, rewrite what the narrator says and hear it again, leave a note
+for Claude on the exact moment ("the logo should land here"), and export when you're happy.
+**Undo** any change, yours or Claude's, or go back to an earlier **version**. It runs only on your
+computer and only while it's open; heavy 3D can stutter in the preview, never in the finished video.
+
+**It remembers your brand.** After the first video, Claude offers to save the brand (colours, logo,
+fonts, look and voice) on your computer, so the next video for the same company, in any project,
+starts on-brand.
 
 ## Install
 
@@ -160,8 +179,15 @@ in the project or tell Claude where they are, and it builds the video around the
   draws with), the fonts from Google Fonts while making the video, the voices the first time you
   choose a narrator (about 90 MB, from Hugging Face; shared with pr-podcast), and, once per video,
   the plugin's version number from GitHub to tell you about updates.
+- **Videos you point it to** (a link to a video you like, a gallery it looks through for ideas)
+  are downloaded only to take a few still pictures from them; the download is deleted straight
+  away and the pictures within a day.
 - **In website mode** it visits the pages it reads, like a browser would, and downloads a public
   list of cookie notices to hide them.
+- **Saved brands and versions stay on your computer.** Brands you choose to save are kept in a
+  `.video-kit` folder in your home folder until you ask Claude to forget them. Versions for Undo
+  are kept inside the project's `video` folder for 7 days (the last 30 changes per video) and then
+  deleted by themselves.
 - **Real screenshots and recordings** run your product on your computer only. The demo login is
   passed while they are taken and never written to a file.
 

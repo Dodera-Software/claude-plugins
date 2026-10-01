@@ -5,7 +5,9 @@ first, restraint, one idea at a time, and nothing that could be pasted into anot
 
 ## Every video is its own
 
-A video that looks like the last one we made is a failure, even if every frame is clean.
+A video that looks like the last one we made is a failure, even if every frame is clean. The
+whole method for inventing one (watching references, finding inspiration, pitching three
+directions, building a world from scratch) is in direction.md; this section is the short version.
 
 - **Your own idea first.** Before picking scenes, invent the video's concept: one creative
   through-line for this product that a motion designer would pitch. For example, a single card from
@@ -13,8 +15,8 @@ A video that looks like the last one we made is a failure, even if every frame i
   terminal; the logo's shape keeps reappearing as the frame for each idea; the video is told as the
   product's own changelog, notification feed or search box; the numbers on its site build the
   layout. It comes from what you learned about the product, not from this list. Open the
-  storyboard with it in one line, offer one different idea in one line as the alternative, and
-  build at least one original scene for it in the video's folder, beyond the kit.
+  storyboard with it in one line. The scenes are written for it in the video's folder; the kit's
+  ready-made scenes are fallbacks, one or two at most.
 - **A signature moment.** Every video has one scene only this product could have, built from its
   own visual world: its CLI typing a real command (`Terminal`), its actual board with a card
   moving across it, its illustration style animated, its chart drawing its real shape, its logo's
@@ -22,16 +24,13 @@ A video that looks like the last one we made is a failure, even if every frame i
   name it in the storyboard.
 - **The look fits the product** (below), chosen in the brief. Two videos for two products should
   differ at a glance: colour of the canvas, weight of the type, how things move.
-- **Vary the structure.** Don't open every video with a `TitleCard` or close every one with a
-  `PromiseList`. Across a 20+ s video use at least four different kinds of scene; never the same
-  kind twice in a row; at most two `TitleCard`s. Pick from the whole kit (scenes.md) and from the
-  product's own scenes.
+- **Vary the structure.** No fixed opener or closer: not a chat piling up, not a title card, not a
+  list of promises at the end by habit. Never the same kind of scene twice in a row.
 - **Vary the handoffs.** Not every scene enters with the same transition. Each look has its own
   (below); inside that, plan each handoff in the storyboard from what's on screen.
 - **Follow what they describe.** When the person describes a scene ("the logo builds itself from
-  the grid", "show three customers' dashboards side by side"), make that scene as described,
-  with a kit scene if one fits or a new one in the video's folder if not. Their idea beats a
-  recipe.
+  the grid", "show three customers' dashboards side by side"), make that scene as described.
+  Their idea beats a recipe, and a reference they love beats the kit.
 - **Recipes are starting points** (recipes.md). Change the order, swap scenes, cut beats; never
   reproduce one as is twice.
 
@@ -54,6 +53,10 @@ A film still opens on the cover, makes clear within 10 s what the product is, an
 `EndCard` (or `LogoReveal`, then `EndCard`).
 
 ## Looks
+
+The looks are the kit's four finishes for product-style videos. A direction with its own world
+(hand-drawn, pixel art, cut paper, a game) sets its own type, palette and motion in its scenes;
+pick the look nearest to it for the kit's parts (transitions, the end) or skip them.
 
 `defineVideo({ look })` sets the colours, type, motion and background of the whole video over the
 brand. Kit scenes follow it; your own scenes read it with `useLook()` (product-scenes.md).

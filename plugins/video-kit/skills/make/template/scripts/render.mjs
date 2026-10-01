@@ -6,6 +6,7 @@
 //   ./render.sh                          list the videos
 //   ./render.sh AcmeTeaser-en            → out/acme-teaser-en-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg
 //   ./render.sh AcmeTeaser-en quick      → only the 1080p one (a draft to watch: about 4× faster)
+//   ./render.sh AcmeTeaser-en 4k         → only the 4K one
 //                                        While it renders, out/progress.txt holds one line: how far
 //                                        along the whole video is, and about how long is left.
 //   ./render.sh AcmeTeaser-en still 120 900  single frames, to check a layout
@@ -432,18 +433,25 @@ if (rest[0] === 'still') {
 // The same frames drawn at twice the pixel density: a 3840×2160 master for YouTube and big
 // screens, and 1080p for social posts, where platforms re-encode anyway. `quick` makes only the
 // 1080p one: a draft to watch and give notes on, in about a quarter of the time.
+// `4k` makes only the 4K one (with its poster), for when that's the only file wanted.
 const quick = rest[0] === 'quick'
+const only4k = rest[0] === '4k'
 rmSync(join(HERE, 'out', `${slug}-4k.mp4`), { force: true })
+if (only4k) {
+  rmSync(join(HERE, 'out', `${slug}-1080p.mp4`), { force: true })
+}
 if (!quick) {
   // 4K draws four times the pixels: about four fifths of the time goes there.
-  await renderPass(image, ['render', 'out/bundle', command, `out/${slug}-4k.mp4`, '--scale=2'], { from: 0, to: 0.78, what: 'the 4K version' })
+  await renderPass(image, ['render', 'out/bundle', command, `out/${slug}-4k.mp4`, '--scale=2'], { from: 0, to: only4k ? 0.97 : 0.78, what: 'the 4K version' })
 }
-await renderPass(image, ['render', 'out/bundle', command, `out/${slug}-1080p.mp4`], { from: quick ? 0 : 0.78, to: 0.97, what: 'the 1080p version' })
+if (!only4k) {
+  await renderPass(image, ['render', 'out/bundle', command, `out/${slug}-1080p.mp4`], { from: quick ? 0 : 0.78, to: 0.97, what: 'the 1080p version' })
+}
 progress.write(0.98, 'the poster and the final checks')
 inImage(image, ['still', 'out/bundle', command, `out/${slug}-poster.png`, '--frame=0', ...(quick ? [] : ['--scale=2'])])
 inImage(image, ['scripts/finish.mjs', slug], { entrypoint: 'node' })
 handBack(image, 'out')
 rmSync(join(HERE, 'out', 'bundle'), { recursive: true, force: true })
 progress.write(1, 'done')
-console.log(`Done: ${quick ? '' : `out/${slug}-4k.mp4, `}out/${slug}-1080p.mp4, out/${slug}-poster.png, out/${slug}-thumbnail.jpg`)
+console.log(`Done: ${[!quick && `out/${slug}-4k.mp4`, !only4k && `out/${slug}-1080p.mp4`, `out/${slug}-poster.png`, `out/${slug}-thumbnail.jpg`].filter(Boolean).join(', ')}`)
 finish()

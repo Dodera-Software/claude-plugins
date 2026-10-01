@@ -4,6 +4,10 @@ Everything below is exported from `src/kit` (`import { … } from '../../kit'`).
 
 ## Kit scenes
 
+Fallbacks, not a menu: a video's scenes are written for its direction (direction.md), and a kit
+scene only fills a beat the direction's own world can't show better, one or two in a video at
+most. A storyboard that reads like this table is the generic video.
+
 Each takes props and has a matching `…Frames(props)` that computes its length from its words.
 Every one lays itself out for the frame (side by side in a wide video, stacked with type sized to
 fit in a square or tall one) and follows the video's look (colours, type, motion). Use the whole
@@ -66,7 +70,9 @@ lists it as `cover`.
 | `ToolIcon` | Google Meet, Slack, GitHub, Jira, file, Claude |
 
 Videos: `defineVideo({ id, brand, format, look, cover: { title }, voiceover, scenes })`, each scene
-`{ name, component, frames, enter, voice }` (`name` is what the edit room lists it as), where `format` is
+`{ name, component, frames, enter, voice }` (`name` is what the edit room lists it as). The edit room's
+changes (lengths, order, hidden scenes, a transition picked by name: fade, fade-through, zoom-in,
+zoom-out, slide, wipe, cut) live in `src/tweaks.json` per video id, and `defineVideo` applies them, where `format` is
 `'landscape'` (16:9, the default), `'square'` or `'portrait'` (9:16, tall); `look` is `'editorial'`
 (default), `'bold'`, `'technical'` or `'playful'` (style.md); `voiceover` is the recorded narration, when they chose one (voice.md);
 `inLanguages(wordsByLanguage, words => defineVideo(…))` for one video per language (`<Id>-<lang>`),

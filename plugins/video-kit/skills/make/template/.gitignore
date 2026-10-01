@@ -1,3 +1,6 @@
 node_modules
 out
 notes.json
+.versions
+session.json
+public/session/

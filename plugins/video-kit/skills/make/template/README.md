@@ -10,8 +10,10 @@ npm install
 ./render.sh <VideoId>                # → out/<video>-4k.mp4, -1080p.mp4, -poster.png, -thumbnail.jpg + glitch scan
 ./render.sh <VideoId> still 120 900  # single frames, to check a layout
 ./render.sh <VideoId> quick          # only the 1080p video, about a quarter of the time
-./render.sh room [VideoId]           # the edit room: play, edit words, lengths and voice lines, notes, export
+./render.sh room [VideoId]           # the editor: play, edit words, lengths, order and voice lines, notes, versions, export
+node scripts/versions.mjs list <VideoId>    # the versions kept for Undo (7 days, the last 30)
 ./render.sh sheet reference.mp4      # contact sheets of a video you want to learn from
+node scripts/reference.mjs <link>    # frames of a video from a link or file, to study its style (temporary)
 npm run timeline                     # where each scene starts
 npm run studio                       # live preview with a timeline
 ./render.sh setup                    # get the render image ready (first time only: about 3 GB, 5–10 minutes)

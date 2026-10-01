@@ -19,6 +19,8 @@ export interface SceneTransition {
    * ease in and out, so they start and land softly. The kit's own ease inside themselves.
    */
   eased?: boolean
+  /** Which kind it is: the edit room needs to know a `grow`, which only works after its own scene. */
+  kind?: string
 }
 
 type Point = { x: number, y: number }
@@ -93,8 +95,8 @@ function Dip({ children, presentationDirection, presentationProgress }: Transiti
 }
 
 /** TransitionSeries takes any presentation; each keeps its own props type up to here. */
-function transition<P extends Record<string, unknown>>(presentation: TransitionPresentation<P>, frames: number, eased = false): SceneTransition {
-  return { presentation: presentation as unknown as SceneTransition['presentation'], frames, eased }
+function transition<P extends Record<string, unknown>>(presentation: TransitionPresentation<P>, frames: number, eased = false, kind?: string): SceneTransition {
+  return { presentation: presentation as unknown as SceneTransition['presentation'], frames, eased, kind }
 }
 
 type ZoomProps = { direction: 'in' | 'out' }
@@ -123,7 +125,7 @@ export function flood(origin: FloodProps, frames = 36): SceneTransition {
  * Pass the element's box and its fill colour (defaults to the brand's sheet white).
  */
 export function grow(from: GrowProps, frames = 36): SceneTransition {
-  return transition({ component: Grow, props: from }, frames)
+  return transition({ component: Grow, props: from }, frames, false, 'grow')
 }
 
 /** Pages push: for two scenes of the same kind, side by side in the story. */

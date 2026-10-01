@@ -8,13 +8,15 @@
 // lines, then records them), src/tweaks.json (scene lengths), notes.json (notes for Claude). The
 // page itself is bundled from src/room/ with esbuild and rebuilt whenever a file it uses changes.
 import { spawn } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, watch, writeFileSync } from 'node:fs'
+import { copyFileSync, createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, watch, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import os from 'node:os'
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve, dirname, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { context } from 'esbuild'
+import { change as changeSession, cleanOld as cleanOldSession, post as postToClaude, read as readSession, SESSION, UPLOADS } from './session.mjs'
+import { cleanAll, list as listVersions, restore as restoreVersion, save as saveVersion, undo as undoVersion } from './versions.mjs'
 import ts from 'typescript'
 
 const HERE = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -40,6 +42,9 @@ function broadcast(event, data = {}) {
 }
 
 let buildError = null
+// A build in progress, for requests of the page's files to wait on.
+let building = Promise.resolve()
+let builtNow = null
 const bundle = await context({
   entryPoints: [join(HERE, 'src', 'room', 'main.tsx')],
   bundle: true,
@@ -53,7 +58,13 @@ const bundle = await context({
   plugins: [{
     name: 'reload',
     setup(build) {
+      build.onStart(() => {
+        building = new Promise(done => {
+          builtNow = done
+        })
+      })
       build.onEnd(result => {
+        builtNow?.()
         if (result.errors.length) {
           buildError = result.errors.map(error => `${error.location ? `${error.location.file}:${error.location.line}: ` : ''}${error.text}`).join('\n')
           broadcast('broken', { error: buildError })
@@ -66,7 +77,14 @@ const bundle = await context({
     }
   }]
 })
+// The first build finishes before the page is served or the browser opened: a page opened sooner
+// found no script yet and stayed blank until it was refreshed.
+await bundle.rebuild().catch(() => {})
 await bundle.watch()
+// Versions past their keeping time go as soon as the editor opens.
+try {
+  cleanAll()
+} catch {}
 
 // ---------------------------------------------------------------------------------------------
 // The project: which folder each video comes from, and what can be changed there.
@@ -156,6 +174,32 @@ function saveWord(folder, { start, end, old, text }) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Lengths and arrangement: src/tweaks.json, per video id ({ lengths, order, hidden, enter }; an older
+// file holds only the lengths, and is read as such).
+
+const TRANSITIONS = new Set(['fade', 'fade-through', 'zoom-in', 'zoom-out', 'slide', 'wipe', 'cut'])
+
+function arrange(id, change) {
+  let tweaks = {}
+  try {
+    tweaks = JSON.parse(readFileSync(TWEAKS, 'utf8'))
+  } catch {}
+  const current = tweaks[id] ?? {}
+  const modern = 'lengths' in current || 'order' in current || 'hidden' in current || 'enter' in current
+  const own = modern ? { lengths: {}, ...current } : { lengths: { ...current } }
+  change(own)
+  // Nothing left to remember: the entry goes, so the file only holds real changes.
+  const empty = !Object.keys(own.lengths).length && !own.order && !(own.hidden?.length) && !Object.keys(own.enter ?? {}).length
+  if (empty) {
+    delete tweaks[id]
+  } else {
+    tweaks[id] = Object.fromEntries(Object.entries(own).filter(([, value]) => value !== undefined))
+  }
+  writeFileSync(TWEAKS, `${JSON.stringify(tweaks, null, 2)}\n`)
+  return tweaks
+}
+
+// ---------------------------------------------------------------------------------------------
 // Voice lines: voice.json, recorded again after a change.
 
 let recording = null
@@ -204,6 +248,47 @@ function watchNotes() {
   notesWatch = watch(NOTES, () => broadcast('notes'))
 }
 watchNotes()
+
+// The guided flow's session: the page hears every change Claude makes to it.
+cleanOldSession()
+let sessionWatch = null
+function watchSession() {
+  if (sessionWatch || !existsSync(SESSION)) {
+    return
+  }
+  sessionWatch = watch(SESSION, () => broadcast('session'))
+}
+watchSession()
+setInterval(watchSession, 2000)
+
+/** A sample of a narrator's voice for the guided flow, recorded once and kept with the session. */
+const SAMPLE_LINE = "Here's how I'd sound, telling your product's story."
+const sampling = new Map()
+function voiceSample(voice) {
+  if (!/^[a-z]{2}_[a-z]+$/.test(voice)) {
+    return Promise.reject(new Error('No such voice'))
+  }
+  const target = join(UPLOADS, 'voices', `${voice}.wav`)
+  if (existsSync(target)) {
+    return Promise.resolve(`session/voices/${voice}.wav`)
+  }
+  if (!sampling.has(voice)) {
+    sampling.set(voice, new Promise((done, fail) => {
+      const child = spawn(process.execPath, [join(HERE, 'scripts', 'voice.mjs'), '--sample', SAMPLE_LINE, voice], { cwd: HERE, stdio: 'ignore' })
+      child.on('close', code => {
+        sampling.delete(voice)
+        const made = join(HERE, 'out', 'voice-samples', `${voice}.wav`)
+        if (code !== 0 || !existsSync(made)) {
+          return fail(new Error("The voice couldn't be recorded. Is there an internet connection? (The voices download once.)"))
+        }
+        mkdirSync(dirname(target), { recursive: true })
+        copyFileSync(made, target)
+        done(`session/voices/${voice}.wav`)
+      })
+    }))
+  }
+  return sampling.get(voice)
+}
 
 // ---------------------------------------------------------------------------------------------
 // Export: the kit's own render (Docker), with its progress. The render always writes to out/; when
@@ -297,7 +382,8 @@ function outputs(id, since) {
 }
 
 let exporting = null
-function startExport(id, quick, to) {
+/** `mode`: quick (1080p only), 4k (4K only) or full (both, with poster and thumbnail). */
+function startExport(id, mode, to) {
   if (exporting?.running) {
     throw new Error('An export is already running.')
   }
@@ -308,8 +394,8 @@ function startExport(id, quick, to) {
   mkdirSync(join(HERE, 'out'), { recursive: true })
   writeFileSync(PROGRESS, '0% · getting ready: starting Docker and preparing the video (about a minute; after an update to the video tools, the first time takes several minutes)')
   writeFileSync(EXPORT_LOG, '')
-  const child = spawn(process.execPath, [join(HERE, 'scripts', 'render.mjs'), id, ...(quick ? ['quick'] : [])], { cwd: HERE, stdio: ['ignore', 'pipe', 'pipe'] })
-  exporting = { id, quick, running: true, code: null, started: Date.now(), destination, copied: [], copyError: null }
+  const child = spawn(process.execPath, [join(HERE, 'scripts', 'render.mjs'), id, ...(mode === 'full' ? [] : [mode])], { cwd: HERE, stdio: ['ignore', 'pipe', 'pipe'] })
+  exporting = { id, mode, running: true, code: null, started: Date.now(), destination, copied: [], copyError: null }
   let log = ''
   const keep = chunk => {
     log = (log + chunk).slice(-20000)
@@ -421,13 +507,14 @@ const PAGE = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Edit room</title>
+<title>Video Kit</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%236d8dff%22/%3E%3Cpath d=%22M12 9l12 7-12 7z%22 fill=%22%230b1230%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="/room/main.css">
 </head>
-<body><div id="room"></div><script type="module" src="/room/main.js"></script></body>
+<body><div id="room"><p style="font: 14px Inter, system-ui, sans-serif; color: #8a8f99; text-align: center; margin-top: 30vh">Opening Video Kit…</p></div>
+<script type="module" src="/room/main.js" onerror="setTimeout(function () { location.reload() }, 1000)"></script></body>
 </html>`
 
 function sendFile(res, path) {
@@ -490,7 +577,8 @@ const server = createServer(async (req, res) => {
         return json(res, 200, { words: words(url.searchParams.get('folder') ?? '') })
       }
       if (path === '/api/words' && req.method === 'POST') {
-        const { folder, ...change } = await body(req)
+        const { folder, label, ...change } = await body(req)
+        saveVersion(folder, label || `Words: “${String(change.old).slice(0, 60)}”`)
         saveWord(folder, change)
         return json(res, 200, { words: words(folder) })
       }
@@ -504,6 +592,7 @@ const server = createServer(async (req, res) => {
         if (recording) {
           return json(res, 409, { error: 'The voice is being recorded already; wait a moment.' })
         }
+        saveVersion(folder, 'The narrator’s lines')
         const file = folderPath(folder, 'voice.json')
         const current = JSON.parse(readFileSync(file, 'utf8'))
         // Only the words, the spoken spelling, the voice and its speed change here.
@@ -525,28 +614,63 @@ const server = createServer(async (req, res) => {
         return
       }
       if (path === '/api/tweak' && req.method === 'POST') {
-        const { id, scene, extra } = await body(req)
+        const { id, scene, extra, label } = await body(req)
         if (!/^[A-Za-z0-9_-]+$/.test(id) || !Number.isInteger(scene) || scene < 1 || !Number.isFinite(extra)) {
           return json(res, 400, { error: 'Bad change' })
         }
-        let tweaks = {}
-        try {
-          tweaks = JSON.parse(readFileSync(TWEAKS, 'utf8'))
-        } catch {}
-        const own = { ...(tweaks[id] ?? {}) }
-        const frames = Math.max(-600, Math.min(1800, Math.round(extra)))
-        if (frames === 0) {
-          delete own[String(scene)]
-        } else {
-          own[String(scene)] = frames
-        }
-        if (Object.keys(own).length) {
-          tweaks[id] = own
-        } else {
-          delete tweaks[id]
-        }
-        writeFileSync(TWEAKS, `${JSON.stringify(tweaks, null, 2)}\n`)
+        saveVersion(id, label || 'A scene’s length')
+        const tweaks = arrange(id, own => {
+          const frames = Math.max(-600, Math.min(1800, Math.round(extra)))
+          if (frames === 0) {
+            delete own.lengths[String(scene)]
+          } else {
+            own.lengths[String(scene)] = frames
+          }
+        })
         return json(res, 200, { tweaks })
+      }
+      if (path === '/api/arrange' && req.method === 'POST') {
+        const { id, order, hidden, enter, name, label } = await body(req)
+        const numbers = value => Array.isArray(value) && value.every(number => Number.isInteger(number) && number >= 1 && number <= 200)
+        if (!/^[A-Za-z0-9_-]+$/.test(id) || (order !== undefined && order !== null && !numbers(order)) || (hidden !== undefined && !numbers(hidden))) {
+          return json(res, 400, { error: 'Bad change' })
+        }
+        saveVersion(id, label || 'The order of the scenes')
+        const tweaks = arrange(id, own => {
+          if (order === null) {
+            delete own.order
+          } else if (order) {
+            own.order = order
+          }
+          if (hidden) {
+            own.hidden = hidden
+          }
+          if (typeof name === 'string') {
+            if (name.trim()) {
+              own.name = name.trim().slice(0, 80)
+            } else {
+              delete own.name
+            }
+          }
+          // The full set of chosen transitions; a scene left out goes back to its own.
+          if (enter && typeof enter === 'object') {
+            own.enter = Object.fromEntries(Object.entries(enter).filter(([number, name]) => /^\d+$/.test(number) && TRANSITIONS.has(name)))
+          }
+        })
+        return json(res, 200, { tweaks })
+      }
+      if (path === '/api/versions' && req.method === 'GET') {
+        return json(res, 200, listVersions(url.searchParams.get('video') ?? ''))
+      }
+      if (path === '/api/versions/undo' && req.method === 'POST') {
+        const { video } = await body(req)
+        const undone = undoVersion(String(video))
+        return json(res, 200, { undone: undone.label, ...listVersions(String(video)) })
+      }
+      if (path === '/api/versions/restore' && req.method === 'POST') {
+        const { video, id } = await body(req)
+        const back = restoreVersion(String(video), String(id))
+        return json(res, 200, { restored: back.label, ...listVersions(String(video)) })
       }
       if (path === '/api/notes' && req.method === 'GET') {
         return json(res, 200, { notes: readNotes(), listening: claudeListening() })
@@ -572,6 +696,47 @@ const server = createServer(async (req, res) => {
         })
         writeFileSync(NOTES, `${JSON.stringify(notes, null, 2)}\n`)
         watchNotes()
+
+// The guided flow's session: the page hears every change Claude makes to it.
+cleanOldSession()
+let sessionWatch = null
+function watchSession() {
+  if (sessionWatch || !existsSync(SESSION)) {
+    return
+  }
+  sessionWatch = watch(SESSION, () => broadcast('session'))
+}
+watchSession()
+setInterval(watchSession, 2000)
+
+/** A sample of a narrator's voice for the guided flow, recorded once and kept with the session. */
+const SAMPLE_LINE = "Here's how I'd sound, telling your product's story."
+const sampling = new Map()
+function voiceSample(voice) {
+  if (!/^[a-z]{2}_[a-z]+$/.test(voice)) {
+    return Promise.reject(new Error('No such voice'))
+  }
+  const target = join(UPLOADS, 'voices', `${voice}.wav`)
+  if (existsSync(target)) {
+    return Promise.resolve(`session/voices/${voice}.wav`)
+  }
+  if (!sampling.has(voice)) {
+    sampling.set(voice, new Promise((done, fail) => {
+      const child = spawn(process.execPath, [join(HERE, 'scripts', 'voice.mjs'), '--sample', SAMPLE_LINE, voice], { cwd: HERE, stdio: 'ignore' })
+      child.on('close', code => {
+        sampling.delete(voice)
+        const made = join(HERE, 'out', 'voice-samples', `${voice}.wav`)
+        if (code !== 0 || !existsSync(made)) {
+          return fail(new Error("The voice couldn't be recorded. Is there an internet connection? (The voices download once.)"))
+        }
+        mkdirSync(dirname(target), { recursive: true })
+        copyFileSync(made, target)
+        done(`session/voices/${voice}.wav`)
+      })
+    }))
+  }
+  return sampling.get(voice)
+}
         broadcast('notes')
         return json(res, 200, { notes, listening: claudeListening() })
       }
@@ -586,11 +751,11 @@ const server = createServer(async (req, res) => {
         return json(res, 200, exportState())
       }
       if (path === '/api/export' && req.method === 'POST') {
-        const { id, quick, to } = await body(req)
+        const { id, quick, mode, to } = await body(req)
         if (!/^[A-Za-z0-9_-]+$/.test(id)) {
           return json(res, 400, { error: 'No such video' })
         }
-        startExport(id, Boolean(quick), to || null)
+        startExport(id, ['quick', '4k', 'full'].includes(mode) ? mode : quick ? 'quick' : 'full', to || null)
         return json(res, 202, exportState())
       }
       if (path === '/api/places') {
@@ -613,6 +778,93 @@ const server = createServer(async (req, res) => {
         openFile(String(file), Boolean(play))
         return json(res, 200, {})
       }
+      if (path === '/api/session' && req.method === 'GET') {
+        const session = readSession()
+        return json(res, 200, { session: session && { ...session, inbox: undefined }, listening: claudeListening() })
+      }
+      if (path.startsWith('/api/session/') && req.method === 'POST') {
+        const action = path.slice('/api/session/'.length)
+        if (action === 'upload') {
+          // A reference video or picture they like, dropped in the page: kept with the session.
+          const name = (url.searchParams.get('name') ?? 'file').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80)
+          mkdirSync(join(UPLOADS, 'references'), { recursive: true })
+          const file = join(UPLOADS, 'references', `${Date.now().toString(36)}-${name}`)
+          const out = createWriteStream(file)
+          let size = 0
+          await new Promise((done, fail) => {
+            req.on('data', chunk => {
+              size += chunk.length
+              if (size > 1_000_000_000) {
+                req.destroy()
+                fail(new Error('That file is over 1 GB; a shorter clip works as well.'))
+              }
+            })
+            req.pipe(out)
+            out.on('finish', done)
+            out.on('error', fail)
+          })
+          return json(res, 200, { src: `session/references/${file.split(sep).pop()}`, size })
+        }
+        const data = await body(req)
+        if (action === 'brief') {
+          const session = changeSession(current => {
+            current.brief = data.brief
+            current.stage = 'working'
+          })
+          postToClaude('brief', { brief: data.brief })
+          watchSession()
+          return json(res, 200, { session: { ...session, inbox: undefined } })
+        }
+        if (action === 'say') {
+          const text = String(data.text ?? '').trim()
+          if (!text) {
+            return json(res, 400, { error: 'Write something first.' })
+          }
+          changeSession(current => {
+            current.messages.push({ id: (current.messages.at(-1)?.id ?? 0) + 1, from: 'you', text, at: new Date().toISOString() })
+          })
+          postToClaude('message', { text })
+        } else if (action === 'answer') {
+          let question = ''
+          changeSession(current => {
+            const message = current.messages.find(item => item.id === data.message)
+            if (message) {
+              message.answer = String(data.answer)
+              question = message.text
+            }
+          })
+          postToClaude('answer', { question, answer: String(data.answer) })
+        } else if (action === 'storyboard' || action === 'stills') {
+          const approved = data.approve === true
+          changeSession(current => {
+            if (current[action]) {
+              current[action].status = approved ? 'approved' : 'changes'
+              current[action].feedback = data.comments ?? {}
+            }
+          })
+          postToClaude(action, { approved, comments: data.comments ?? {}, general: data.general ?? '' })
+        } else if (action === 'ideas') {
+          const picked = Array.isArray(data.picked) ? data.picked.filter(Number.isInteger) : []
+          let chosen = []
+          changeSession(current => {
+            if (current.ideas) {
+              current.ideas.status = 'answered'
+              current.ideas.picked = picked
+              current.ideas.more = data.more === true
+              chosen = picked.map(index => current.ideas.items[index]).filter(Boolean).map(({ title, link }) => ({ title, link }))
+            }
+          })
+          postToClaude('ideas', { picked, chosen, more: data.more === true, note: String(data.note ?? '') })
+        } else {
+          return json(res, 404, { error: 'Not found' })
+        }
+        const session = readSession()
+        return json(res, 200, { session: session && { ...session, inbox: undefined } })
+      }
+      if (path === '/api/voice-sample' && req.method === 'POST') {
+        const { voice } = await body(req)
+        return json(res, 200, { src: await voiceSample(String(voice)) })
+      }
       if (path === '/api/close' && req.method === 'POST') {
         json(res, 200, {})
         setTimeout(() => shutdown(), 200)
@@ -625,6 +877,10 @@ const server = createServer(async (req, res) => {
       return res.end(PAGE)
     }
     // The page's bundle, then the studio's public/ files at the root, as staticFile() expects.
+    // The page's own files wait for a build in progress, so they're never missing or half written.
+    if (path.startsWith('/room/')) {
+      await building
+    }
     const [base, rest] = path.startsWith('/room/') ? [OUT, path.slice('/room/'.length)] : [join(HERE, 'public'), path.slice(1)]
     const file = join(base, normalize(rest))
     if (file.startsWith(base + sep) && existsSync(file) && statSync(file).isFile()) {

@@ -7,7 +7,7 @@ import { FORMATS } from './layout'
 import { LookProvider, lookColors, type LookName } from './look'
 import { easeInOut, FPS } from './motion'
 import { Cover, type CoverProps } from './scenes/Cover'
-import { crossfade, flood, type SceneTransition } from './transitions'
+import { crossfade, cut, dip, flood, push, wipe, zoom, type SceneTransition } from './transitions'
 import tweaks from '../tweaks.json'
 
 export { FORMATS }
@@ -44,6 +44,8 @@ const AFTER_LINE = 24
 
 interface VideoSpec {
   id: string
+  /** Its name for people, in the edit room ("What's new in March"). Without it, made from the id. */
+  name?: string
   brand: Brand
   format?: keyof typeof FORMATS
   scenes: Scene[]
@@ -83,8 +85,14 @@ export interface VideoDefinition {
     names: string[]
     /** The shortest each scene can be made in the edit room, in frames (the cover can't be changed). */
     floors: number[]
+    /** Each shown scene's number as written in code (from 1; null for the cover). */
+    numbers: (number | null)[]
+    /** Every scene of the video, shown or hidden, with the transition chosen for it in the edit room. */
+    catalog: { number: number, name: string, hidden: boolean, transition: TransitionName | null }[]
     /** The id it was defined with, before languages and shapes were added: the key for tweaks. */
     baseId: string
+    /** Its name for people: `name`, else made from the id ("LaunchFilm" → "Launch film"). */
+    title: string
   }
 }
 
@@ -92,27 +100,85 @@ export interface VideoDefinition {
  * Lengths changed in the edit room, by video id (as defined, before language and shape suffixes)
  * and scene number (from 1, the cover not counted): frames added (or taken away). src/tweaks.json.
  */
-type Tweaks = Record<string, Record<string, number>>
+/** The transitions the edit room offers by name, none of which depends on what's in the previous scene. */
+export const NAMED_TRANSITIONS = {
+  fade: () => crossfade(),
+  'fade-through': () => dip(),
+  'zoom-in': () => zoom('in'),
+  'zoom-out': () => zoom('out'),
+  slide: () => push('from-right'),
+  wipe: () => wipe('from-left'),
+  cut: () => cut()
+}
+export type TransitionName = keyof typeof NAMED_TRANSITIONS
+
+/**
+ * What the edit room changed for a video: scene lengths (frames added or taken away, by scene
+ * number from 1), the order of the scenes (numbers, a number twice for a duplicate), the scenes
+ * hidden, and a transition chosen by name for a scene. An older file holds only the lengths.
+ */
+export interface Arrangement {
+  lengths: Record<string, number>
+  order?: number[]
+  hidden?: number[]
+  enter?: Record<string, TransitionName>
+  /** The video's name, changed in the edit room. */
+  name?: string
+}
+
+export function arrangementOf(id: string): Arrangement {
+  const own = (tweaks as Record<string, unknown>)[id]
+  if (!own || typeof own !== 'object') {
+    return { lengths: {} }
+  }
+  return 'lengths' in own || 'order' in own || 'hidden' in own || 'enter' in own || 'name' in own
+    ? { lengths: {}, ...(own as Partial<Arrangement>) } as Arrangement
+    : { lengths: own as Record<string, number> }
+}
 
 /** A scene made longer or shorter in the edit room: never shorter than its voice line needs, nor by more than a quarter. */
-function tweaked(scene: Scene, index: number, id: string): Scene {
-  const extra = (tweaks as Tweaks)[id]?.[String(index + 1)] ?? 0
+function tweaked(scene: Scene, number: number, arrangement: Arrangement): Scene {
+  const extra = arrangement.lengths[String(number)] ?? 0
   if (!extra) {
     return scene
   }
   return { ...scene, frames: Math.max(Math.round(scene.frames * 0.75), scene.frames + extra) }
 }
 
+/** "LaunchFilm" or "launch-film" → "Launch film". */
+function titleFromId(id: string) {
+  const words = id.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[-_]+/g, ' ').trim().toLowerCase()
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
 /** One video: its brand, and its scenes in order with how each one grows out of the last. */
-export function defineVideo({ id, brand: base, format = 'landscape', look = 'editorial', scenes: givenScenes, cover = {}, voiceover }: VideoSpec): VideoDefinition {
+export function defineVideo({ id, name, brand: base, format = 'landscape', look = 'editorial', scenes: givenScenes, cover = {}, voiceover }: VideoSpec): VideoDefinition {
   const { width, height } = FORMATS[format]
   const brand = lookColors(base, look)
+  // The scenes in the order the edit room set (numbers from 1; a number twice is a duplicate), the
+  // hidden ones left out. A scene added in code later still shows, at the end. A `grow` only works
+  // after the scene it grows out of: moved elsewhere, it becomes a fade-through.
+  const arrangement = arrangementOf(id)
+  const all = givenScenes.map((_, index) => index + 1)
+  const hidden = new Set(arrangement.hidden ?? [])
+  let order = (arrangement.order ?? all).filter(number => number >= 1 && number <= givenScenes.length)
+  order = [...order, ...all.filter(number => !order.includes(number))].filter(number => !hidden.has(number))
+  if (!order.length) {
+    order = [1]
+  }
+  const arranged = order.map((number, position) => {
+    const scene = givenScenes[number - 1]
+    const chosen = arrangement.enter?.[String(number)]
+    const movedAway = (position === 0 ? 0 : order[position - 1]) !== number - 1
+    const enter = chosen && NAMED_TRANSITIONS[chosen] ? NAMED_TRANSITIONS[chosen]() : scene.enter?.kind === 'grow' && movedAway ? dip() : scene.enter
+    return { ...scene, enter }
+  })
   // A scene's last line must end before the next scene starts coming in over it.
-  const nextEntrance = (index: number) => givenScenes[index + 1]?.enter?.frames ?? (givenScenes[index + 1] ? crossfade().frames : 0)
-  const ownScenes = givenScenes.map((scene, index) => withVoice(tweaked(scene, index, id), index, voiceover, nextEntrance(index)))
+  const nextEntrance = (index: number) => arranged[index + 1]?.enter?.frames ?? (arranged[index + 1] ? crossfade().frames : 0)
+  const ownScenes = arranged.map((scene, index) => withVoice(tweaked(scene, order[index], arrangement), index, voiceover, nextEntrance(index)))
   // The shortest each scene can be made in the edit room: a quarter off its own length at most, and
   // never less than its voice line needs. The same rules as tweaked() and withVoice().
-  const ownFloors = givenScenes.map((scene, index) => withVoice({ ...scene, frames: Math.round(scene.frames * 0.75) }, index, voiceover, nextEntrance(index)).frames)
+  const ownFloors = arranged.map((scene, index) => withVoice({ ...scene, frames: Math.round(scene.frames * 0.75) }, index, voiceover, nextEntrance(index)).frames)
   const opening = cover === false ? undefined : (ownScenes[0].enter ?? flood({ x: width / 2, y: height / 2 }))
   const scenes: Scene[] = cover === false || !opening
     ? ownScenes
@@ -174,9 +240,14 @@ export function defineVideo({ id, brand: base, format = 'landscape', look = 'edi
       enters,
       cover: cover !== false,
       voice: voiceTimes,
-      names: scenes.map((scene, index) => (cover !== false && index === 0 ? 'Cover' : scene.name ?? `Scene ${cover !== false ? index : index + 1}`)),
+      names: scenes.map((scene, index) => (cover !== false && index === 0 ? 'Cover' : scene.name ?? `Scene ${(scenes.length > order.length ? order[index - 1] : order[index]) ?? index}`)),
       floors: scenes.length > ownFloors.length ? [scenes[0].frames, ...ownFloors] : ownFloors,
-      baseId: id
+      // Each scene's own number (from 1, as written in code; null for the cover), and every scene
+      // of the video with its name, for the edit room to rearrange.
+      numbers: scenes.length > order.length ? [null, ...order] : order,
+      catalog: givenScenes.map((scene, index) => ({ number: index + 1, name: scene.name ?? `Scene ${index + 1}`, hidden: hidden.has(index + 1), transition: arrangement.enter?.[String(index + 1)] ?? null })),
+      baseId: id,
+      title: arrangement.name ?? name ?? titleFromId(id)
     }
   }
 }

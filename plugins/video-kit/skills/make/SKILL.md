@@ -57,7 +57,19 @@ Ask with the multiple-choice question tool (AskUserQuestion) so the person click
 every question gets an "Other" for their own answer. If that tool isn't available, ask the same
 questions in one short message.
 
-**First, how involved they want to be** (skip it when the request already describes the video in
+**Before anything, where they'd like to work.** One question, every time (unless they already
+said "in the chat" or "in the browser"):
+
+| Header | Question | Options (label: description) |
+| --- | --- | --- |
+| Where | Where would you like to make it? | In your browser (recommended): a guided page, step by step: pick what you want, paste videos you like, hear the voices, review the storyboard and pictures, then edit and export · Here in the chat: I ask a few questions here and show you pictures |
+
+**In the browser:** get ready first (step 2), then follow references/browser.md: the brief,
+progress, storyboard, stills and editor all happen in the page, and you work as usual, hearing
+what they do there. **In the chat:** carry on below; before making the video, step 7 still offers
+the editor.
+
+**Then, how involved they want to be** (skip it when the request already describes the video in
 detail). One question:
 
 | Header | Question | Options |
@@ -119,8 +131,8 @@ in 3D; style.md, "Two forms"; a film whenever they ask for something cinematic, 
 movie" or "not like a presentation"), who
 watches it (customers unless said otherwise), the call to action (the product's website), tone
 (from the look: a light joke only in playful; confident and warm otherwise, never salesy, no hype
-words). If they mention a video they'd like to
-look like, see "A reference" in references/recipes.md.
+words). If they mention a video they'd like it to look like, watch it (references/direction.md,
+"Watching a reference"): a link's page words say nothing about its style.
 
 ## 2. Get ready (quietly)
 
@@ -160,7 +172,7 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
 - **An older studio:** if `video/` came from an earlier version (it lacks files the template has,
   like `src/kit/three/`, `scripts/site.mjs` or `scripts/room.mjs`), bring it up to date first: copy from the template
   `src/kit/`, `scripts/`, `render.sh`, `Dockerfile`, `fonts.conf`, `package.json`, `tsconfig.json`,
-  `package-lock.json`, `README.md` and `src/room/` (plus `src/tweaks.json` if it's missing, as
+  `package-lock.json`, `README.md`, `.gitignore` and `src/room/` (plus `src/tweaks.json` if it's missing, as
   `{}`), never `src/videos/`, `src/brands/` or `public/`. Remove
   `src/kit/audio/` and `public/audio/` if they're there, and any `<Sfx>` or `sound:` in their own videos (the kit
   has no sound effects any more). Then `npm install` and `npm run typecheck`; if an existing video no longer
@@ -188,17 +200,37 @@ it to a new hire. For a large project, send an Explore agent per area.
 Write `video/src/videos/<slug>/BRIEF.md` (next to VISION.md when there was an interview): the one-line promise, who it's for, the 3–5 things the
 video shows with the file each claim comes from, the tokens, fonts and logo, the demo names, and,
 for captures, how the app runs. A claim you can't point to in the code doesn't go in the video.
-Create the brand if it doesn't exist: references/brand.md.
+**A brand saved from an earlier video comes first.** Before creating a brand, list the saved ones:
+`node "${CLAUDE_PLUGIN_ROOT}/skills/make/template/scripts/brands.mjs" list`. If one is this product's (the same name or website),
+ask with the multiple-choice tool:
 
-## 4. Storyboard, then stop for approval
+| Header | Question | Options (label: description) |
+| --- | --- | --- |
+| Brand | Use the saved <name> brand? | Use it (recommended): the same colours, logo, fonts, look and voice as last time · Start fresh: read the brand from the product again |
 
-Make this video its own (references/style.md, "Every video is its own"): your concept for it, the
-look, the signature moment, a varied structure. Hold it to the quality bar (style.md, "The
+On "Use it": `node "${CLAUDE_PLUGIN_ROOT}/skills/make/template/scripts/brands.mjs" use <slug> video` copies its folder and files into the
+video; its printed details (look, voice, pace, tone) are the defaults for this video, so suggest
+them in any question still to ask instead of asking from scratch. Otherwise, create the brand:
+references/brand.md.
+
+## 4. A direction, then the storyboard, then stop for approval
+
+**Every video is invented for this product** (references/direction.md): from the brief, what you
+found in the product, the references they gave (watched, not read about), inspiration you looked
+for, and the brand. Never from the kit's list of scenes, and never from the last video you made.
+
+First the direction: watch their references, look for inspiration when they gave none or asked for
+ideas, and pitch three directions that differ at a glance (a world, a story device, the signature
+moment, the ending), with pictures. They pick one (or mix); write it into VISION.md. Skip this only
+when they described the video themselves; their idea is the direction.
+
+Then the storyboard, in that direction: your concept, the look, the signature moment, a varied
+structure (references/style.md, "Every video is its own"). Hold it to the quality bar (style.md, "The
 quality bar: never AI slop") before showing anything. After an interview, every scene traces back to
 VISION.md; say where you went beyond it. Then show the plan the way a person reads it:
 
 - **The idea**, one line ("The whole film happens inside Acme's terminal: every feature is a
-  command"), and one different idea as the alternative, one line.
+  command"), from the direction they picked.
 - **The look**, one line on which and why.
 - **The form**, one line: scene by scene, or one continuous film (and why).
 - One line per scene, in their words ("Opens on a team chat where nobody knows who's doing the
@@ -212,7 +244,9 @@ Follow references/pacing.md. Wait for a yes or changes.
 ## 5. Build
 
 - `video/src/videos/<slug>/`: `content.ts` holds every word; `index.tsx` calls
-  `defineVideo({ id, brand, format, look, cover: { title }, scenes })`; the product's own
+  `defineVideo({ id, name, brand, format, look, cover: { title }, scenes })`; `name` is what people
+  call it ("Spring launch film", "What's new in March"), shown in the edit room, which they can
+  rename there; the product's own
   scenes, including the original scene for your idea, go in `scenes/` and `components/`. Register
   it in `video/src/videos/index.ts`. Give every scene a `name`, the storyboard's title for it ("The
   problem", "Logo reveal"): the edit room lists scenes by it. Every word shown on screen lives in
@@ -228,8 +262,9 @@ Follow references/pacing.md. Wait for a yes or changes.
   language's text. Write each
   language as a native speaker would, not word for word; the font needs `latin-ext` for accented
   letters (references/brand.md). One language: plain `defineVideo`, no suffix.
-- The whole kit (references/scenes.md), chosen for this story and look, plus your own scenes where
-  the idea needs them. Scenes that show the product: rebuilt from the code
+- The scenes are your own, written for the direction in the video's folder (references/direction.md,
+  "Building a world from scratch"). A kit scene (references/scenes.md) only for a beat the world
+  can't show better, one or two in a video at most, and only where it looks part of the world. Scenes that show the product: rebuilt from the code
   (references/product-scenes.md) or real screenshots (`CapturedScreen`, references/capture.md), as
   they chose. Your own scenes read `useLook()` and `useShape()` so they fit the look and every shape.
 - The cover: every video opens on a composed frame (logo, name and `cover.title`, the video's
@@ -283,8 +318,8 @@ or asked outright to "just make it".
 `./render.sh <VideoId>` (once per video id: each language and shape) makes the full-resolution and
 1080p videos, a poster and a thumbnail in the video's own shape, and checks every frame for
 glitches; fix any it reports. `./render.sh <VideoId> quick` makes only the 1080p one, in about a
-quarter of the time (a 3D film: minutes instead of most of an hour); use it only when they ask for
-a quick one.
+quarter of the time (a 3D film: minutes instead of most of an hour), and `./render.sh <VideoId> 4k`
+only the 4K one; use them only when they ask for just that.
 
 **While it renders, keep them posted.** Run it in the background and, about every 30 seconds, read
 `out/progress.txt` (one line: how far the whole video is, about how long is left, what it's
@@ -300,6 +335,11 @@ that takes more than a minute. Then:
   assumed.
 - Invite notes like a director gives them: "this part is too fast", "make the ending punchier".
   Or offer the edit room, where they can watch it and point at the exact moment.
+- **Remember the brand**, the first time a video for it is finished and it isn't saved yet (the
+  list above): ask once, "Save the <name> brand for your next videos? Its colours, logo, fonts,
+  look and voice stay on this computer." On yes:
+  `node "${CLAUDE_PLUGIN_ROOT}/skills/make/template/scripts/brands.mjs" save video <slug> '{"name": …, "domain": …, "look": …, "voice": …, "speed": …, "tone": "<a few words on its tone>"}'`.
+  "Update the brand" saves it again; "forget the brand" is `… forget <slug>`.
 
 ## The edit room (when they want to watch and tweak it themselves)
 
@@ -321,9 +361,15 @@ themselves. It runs only on their computer (`localhost`), and only while it's op
    `node scripts/notes.mjs done <id> "<one line in plain words: what you changed>"`. If it's
    unclear, `node scripts/notes.mjs ask <id> "<one short question>"`; they answer in the page, which
    arrives as a new note. Mention each change in the chat in one line too.
-4. What they change themselves needs nothing from you: words save into `content.ts`, scene lengths
-   into `src/tweaks.json` (half-second steps, applied to every language and shape, never below what
-   the narration needs), narrator lines into `voice.json`, recorded again. Their export runs the
+4. What they change themselves needs nothing from you: words save into `content.ts`; scene lengths,
+   the order of the scenes (dragged in the strip under the video), hidden and duplicated scenes, and
+   a transition picked for a scene into `src/tweaks.json` (applied to every language and shape;
+   lengths never below what the narration needs; a `grow` moved away from its scene becomes a
+   fade-through); narrator lines into `voice.json`, recorded again. **Undo and Versions**: a
+   version of the video is saved before every change, theirs or yours for a note (the notes watch
+   saves it), so they can go back to any of them; versions are kept 7 days, the last 30. When you
+   change a video for something they said in the chat while the editor is open, save one first:
+   `node scripts/versions.mjs save <VideoId> "<what you're about to change>" claude`. Their export runs the
    same render as yours, with its progress in the page, and copies the files to the folder they
    pick (the video's folder, Downloads, the Desktop, or any folder through the system's picker).
 5. When they're done, they press "Close room" (or ask you: stop the background process). Stop the

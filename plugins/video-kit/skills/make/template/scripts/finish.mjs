@@ -63,4 +63,5 @@ function previews(slug) {
 
 const slug = process.argv[2]
 previews(slug)
-scan(`out/${slug}-1080p.mp4`)
+// The glitch scan reads the 1080p video, or the 4K one when only that was made.
+scan(existsSync(`out/${slug}-1080p.mp4`) ? `out/${slug}-1080p.mp4` : `out/${slug}-4k.mp4`)
