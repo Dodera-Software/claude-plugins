@@ -6,11 +6,11 @@ needed: answer a few questions, approve a plan, and get a finished 4K video.
 
 <table>
   <tr>
-    <td width="42%" valign="top">
-      <a href="https://github.com/Dodera-Software/claude-plugins/releases/download/video-kit-v0.8.1/video-kit-launch-1080p.mp4"><img src="../../media/video-kit/video-kit-launch.gif" alt="video-kit's launch film: type one command, answer a few questions, approve the plan and stills, get the video"></a>
-      <br><sub><b>video-kit's own launch film</b>, made with video-kit (square, 64 s). <a href="https://github.com/Dodera-Software/claude-plugins/releases/download/video-kit-v0.8.1/video-kit-launch-1080p.mp4">Watch the full video</a></sub>
-    </td>
     <td width="58%" valign="top">
+      <a href="https://github.com/Dodera-Software/claude-plugins/releases/download/video-kit-v1.2.0/video-kit-launch-film-1080p.mp4"><img src="../../media/video-kit/video-kit-launch-film.gif" alt="video-kit's launch film: Video Kit's red tile in a hand-drawn studio, from a founder's request to opening night"></a>
+      <br><sub><b>video-kit's own launch film</b>, made with video-kit in the guided browser flow, in a hand-drawn style picked from three directions (wide, 39 s). <a href="https://github.com/Dodera-Software/claude-plugins/releases/download/video-kit-v1.2.0/video-kit-launch-film-1080p.mp4">Watch the full video</a></sub>
+    </td>
+    <td width="42%" valign="top">
       <a href="https://github.com/Dodera-Software/claude-plugins/releases/download/video-kit-v0.8.1/dodera-from-its-website-1080p.mp4"><img src="../../media/video-kit/dodera-from-its-website.gif" alt="Dodera Software's film in the technical look: its way of working as a deploy command, what it builds, its team"></a>
       <br><sub><b>Dodera Software</b>, made by <code>/video-kit:website doderasoft.com</code> from its website alone, in the technical look (wide, 47 s). <a href="https://github.com/Dodera-Software/claude-plugins/releases/download/video-kit-v0.8.1/dodera-from-its-website-1080p.mp4">Watch the full video</a></sub>
     </td>

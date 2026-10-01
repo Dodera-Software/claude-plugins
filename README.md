@@ -9,7 +9,7 @@ every plugin here shows up in `/plugin` → Discover.
 
 ## Plugins
 
-<a href="plugins/video-kit"><img src="media/video-kit/dodera-from-its-website.gif" width="560" alt="A video made by video-kit from doderasoft.com alone"></a>
+<a href="plugins/video-kit"><img src="media/video-kit/video-kit-launch-film.gif" width="640" alt="video-kit's own launch film, made with video-kit"></a>
 
 | Plugin | What it does | Install |
 | --- | --- | --- |
