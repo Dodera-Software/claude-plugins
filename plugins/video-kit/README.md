@@ -104,7 +104,7 @@ brand.
 **Make it in your browser, step by step.** When you start, Claude asks whether you'd like to work
 in the chat or in your browser. In the browser, a guided page walks you through it: pick what
 you're making, who it's for and the one thing they should remember (with suggestions from your
-product), paste videos you like and say what you like about them (or ask for ideas), see the looks playing, hear the
+product), paste videos you like and say what you like about them (or ask for ideas), say how it should feel, hear the
 narrator voices, pick one of three directions, then review the storyboard and the key moments before anything is made, and
 finish in the editor. Claude does the work in the background and talks to you on the page.
 
@@ -119,6 +119,21 @@ computer and only while it's open; heavy 3D can stutter in the preview, never in
 **It remembers your brand.** After the first video, Claude offers to save the brand (colours, logo,
 fonts, look and voice) on your computer, so the next video for the same company, in any project,
 starts on-brand.
+
+## Where to start
+
+Open Claude Code in any folder and type `/video-kit:make`. The first thing it asks is what the
+video is about:
+
+- **This project:** you're in your product's code, and the video comes from it.
+- **Code in another folder, or on GitHub:** keep your videos in a folder of their own (one per
+  company or project, say `Videos/Acme`) and point Claude to the code. It only reads it.
+- **A website:** any product, from its public site.
+- **Just an idea:** an event, an announcement, a pitch: describe it, and the video says only what
+  you told it.
+
+Coming back to the same folder, it remembers what each product's videos come from, so the next
+video starts straight away.
 
 ## Install
 

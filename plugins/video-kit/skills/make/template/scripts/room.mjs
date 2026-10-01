@@ -305,6 +305,9 @@ function places() {
   }
 }
 
+// The picker's question, by what it's for (fixed strings, no quotes: nothing from the page goes into the command).
+const PROMPTS = { save: 'Where should the video be saved?', code: 'Which folder holds the product code?' }
+
 /**
  * The system's own folder picker (Finder, Explorer, or zenity on Linux). Null if cancelled.
  *
@@ -313,8 +316,8 @@ function places() {
  * sees it. The script goes in as -EncodedCommand (UTF-16LE, base64), so no quoting can break it, and
  * the path comes back in UTF-8 so folders with accents survive.
  */
-function pickFolder() {
-  const prompt = 'Where should the video be saved?'
+function pickFolder(purpose = 'save') {
+  const prompt = PROMPTS[purpose] ?? PROMPTS.save
   let command
   let args
   if (process.platform === 'darwin') {
@@ -763,7 +766,8 @@ function voiceSample(voice) {
         return json(res, 200, Object.fromEntries(Object.entries(all).map(([name, dir]) => [name, { path: dir, exists: name === 'video' || existsSync(dir) }])))
       }
       if (path === '/api/pick-folder' && req.method === 'POST') {
-        return json(res, 200, { path: await pickFolder() })
+        const { purpose } = await body(req)
+        return json(res, 200, { path: await pickFolder(purpose === 'code' ? 'code' : 'save') })
       }
       if (path === '/api/trash' && req.method === 'POST') {
         const { files } = await body(req)
@@ -843,6 +847,16 @@ function voiceSample(voice) {
             }
           })
           postToClaude(action, { approved, comments: data.comments ?? {}, general: data.general ?? '' })
+        } else if (action === 'source') {
+          // What the video is about, as soon as they say it: Claude starts reading while they answer the rest.
+          const source = data.source && typeof data.source === 'object' ? { kind: String(data.source.kind ?? ''), value: String(data.source.value ?? '').slice(0, 2000) } : null
+          if (!source?.kind) {
+            return json(res, 400, { error: 'Say what the video is about first.' })
+          }
+          changeSession(current => {
+            current.source = source
+          })
+          postToClaude('source', { source })
         } else if (action === 'ideas') {
           const picked = Array.isArray(data.picked) ? data.picked.filter(Number.isInteger) : []
           let chosen = []

@@ -29,10 +29,16 @@ https://github.com/Dodera-Software/claude-plugins/releases/tag/video-kit-vX.Y.Z)
 type /plugin, open Installed, choose video-kit and Update now. I'll continue with this version."
 Say nothing if it's up to date, and skip it silently if the check fails (offline). Never block on it.
 
-## 1. Since when
+## 1. Which product, and since when
+
+**Which product,** as the make skill asks it ("What's the video about?", references/sources.md):
+this project, or code elsewhere (`git -C <folder> log …`; a GitHub link: a temporary copy with its
+history, `git clone --shallow-since=<date> <link> <dir>`, deleted afterwards, and `gh pr list
+--repo <owner>/<repo>` for its pull requests). A what's-new video needs the changes: with only a
+website or an idea, ask them to list what changed, in their words, and use only that.
 
 If the request doesn't say, ask in one round (AskUserQuestion), together with the make skill's
-Format and Sound questions (four questions at most per round); Look and Language come in a second
+Format and Sound questions (four questions at most per round); Feel and Language come in a second
 round with the changes to pick, as in the make skill:
 
 | Header | Question | Options |
@@ -53,7 +59,7 @@ round with the changes to pick, as in the make skill:
 
 Then ask (AskUserQuestion, multiple choice allowed) "Which changes should the video show?", with
 the candidates in plain words (label: what it lets the user do; description: where they'll find
-it). Recommend the headliners. Ask the make skill's Look and Language questions in the same round.
+it). Recommend the headliners. Ask the make skill's Feel and Language questions in the same round.
 
 ## 3. The shape
 

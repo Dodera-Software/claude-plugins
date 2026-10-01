@@ -41,7 +41,7 @@ Run it like a good creative director, not a form:
 7. **The signature moment.** Propose two or three concrete, product-specific ideas (the
    Duolingo-style "skill unlocked" ending, the logo rising out of a hammer strike, ten tools
    snapping into one); ask which excites them, or what they'd do instead.
-8. **Look and form.** The look (style.md, "Looks"), scene by scene or cinematic with 3D, how the
+8. **Form.** Scene by scene or cinematic with 3D (the look comes from the direction they picked), how the
    product appears (recreated, real recordings, their own recordings) and in which frame (browser
    window, laptop, phone).
 9. **Sound.** Silent, or a narrator (and what kind of voice: calm, warm, energetic).

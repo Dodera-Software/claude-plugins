@@ -13,15 +13,18 @@ one line now and then ("Working on the storyboard; it'll appear in your browser"
 
 1. Get ready as SKILL.md step 2 says (Node, the studio copied into `video/`, `npm install`; Docker
    only matters later). Tell them in one line: "Setting up your video studio, about a minute."
-2. Start the session with what you know, and the brands saved on this computer:
-   `node scripts/session.mjs start '{"product": "<name>", "brands": <output of brands.mjs list, as [{slug, name, domain}]>}'`
+2. Start the session with what you know: whether this folder has code (`here`), the products
+   this folder made videos about before (`video/products.json`) and the brands saved on this
+   computer:
+   `node scripts/session.mjs start '{"product": "<name, if this folder's code says it>", "here": true|false, "products": <products.json, or []>, "brands": <brands.mjs list, as [{slug, name, domain}]>}'`
 3. Open the page: `./render.sh room` in the background (Bash, `run_in_background`). It opens their
    browser on the brief. Tell them: "Your video studio is open in the browser. Answer a few
    questions there and I'll take it from there."
 4. Listen: `node scripts/session.mjs watch` with the Monitor tool, for the whole session (it ends
    after 30 minutes: start it again). Each line is something they did, as JSON with a `kind`. It
    also brings the editor's notes (`kind: "note"`), so it's the only watcher you need.
-5. While they answer, take the quick look at the product (SKILL.md step 1) and send ideas the page
+5. The page's first question is what the video is about. As soon as they answer it you hear
+   `kind: "source"`; then take the quick look at the product (SKILL.md step 1) and send ideas the page
    shows as one-click suggestions: `node scripts/session.mjs suggest '{"audiences": […], "messages": [three
    candidates, in the product's own words], "mustShow": [features worth showing], "actions": [its call to action]}'`.
 
@@ -29,7 +32,8 @@ one line now and then ("Working on the storyboard; it'll appear in your browser"
 
 | `kind` | It means | Do |
 | --- | --- | --- |
-| `brief` | The brief, every answer they gave (`brief.kind`, `audience`, `message`, `action`, `references`, `feel`, `look`, `form`, `sound`, `voice`, `formats`, `length`, `languages`, `mustShow`, `avoid`, `brand`, `inspireMe`). "auto" or empty means "you decide". | Treat it as SKILL.md step 1's answers and the interview's (references/interview.md). Ask follow-ups only where it matters, with `ask` (one at a time, with options), and push back on a vague message the way the interview does. `brand` set: `brands.mjs use <slug> video`. References, links or files in `public/session/references/`: watch each with `node scripts/reference.mjs <link or file>` and look at its frames (direction.md); a link that gives only a preview picture, `ask` for a screen recording or screenshots. Then the directions (below). Write BRIEF.md and VISION.md as usual. |
+| `source` | What the video is about: `source.kind` is `here`, `folder` (a path), `github` (a link), `website` (an address), `idea` (their description) or `known` (a product name from products.json) | Start reading it (references/sources.md), then `suggest` (with `product`, its name). |
+| `brief` | The brief, every answer they gave (`brief.source`, `brief.kind`, `audience`, `message`, `action`, `references`, `feel`, `look`, `form`, `sound`, `voice`, `formats`, `length`, `languages`, `mustShow`, `avoid`, `brand`, `inspireMe`). "auto" or empty means "you decide". | Treat it as SKILL.md step 1's answers and the interview's (references/interview.md). Ask follow-ups only where it matters, with `ask` (one at a time, with options), and push back on a vague message the way the interview does. `brand` set: `brands.mjs use <slug> video`. References, links or files in `public/session/references/`: watch each with `node scripts/reference.mjs <link or file>` and look at its frames (direction.md); a link that gives only a preview picture, `ask` for a screen recording or screenshots. Then the directions (below). Write BRIEF.md and VISION.md as usual. |
 | `answer` | Their answer to one of your questions | Carry on with it. |
 | `message` | Something they wrote to you | Reply with `say` (or act on it, then `say` what you did). |
 | `ideas` | The directions they picked: `picked` (numbers from 0), `chosen` (their titles and links), `note`, or `more: true` for other ideas | Picked: write the direction into VISION.md, `node scripts/reference.mjs clean`, then the storyboard in it. More: find others, unlike the first ones, and send them again. |

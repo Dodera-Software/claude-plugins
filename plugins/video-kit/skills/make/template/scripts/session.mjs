@@ -6,7 +6,8 @@
 //   node scripts/session.mjs watch                  one JSON line per thing the person did, as it
 //                                                   happens (also the editor's notes), and tells the
 //                                                   page Claude is here; run it with the Monitor tool
-//   node scripts/session.mjs start '<json>'         a new session: { product, suggestions, brands }
+//   node scripts/session.mjs start '<json>'         a new session: { product, here (code in this
+//                                                   folder?), products, brands }
 //   node scripts/session.mjs suggest '<json>'       ideas for the brief, as they come: { audiences,
 //                                                   messages, mustShow, product }
 //   node scripts/session.mjs steps '["Reading your product", "Storyboard", …]'
@@ -42,6 +43,11 @@ export function empty() {
     product: null,
     suggestions: {},
     brands: [],
+    // Whether this folder has the product's code, and products this folder has made videos about
+    // before (video/products.json), offered first.
+    here: null,
+    products: [],
+    source: null,
     brief: null,
     steps: [],
     messages: [],
@@ -142,7 +148,13 @@ if (!main) {
 } else if (command === 'suggest') {
   const ideas = json(args[0] ?? '{}', 'The suggestions')
   change(session => {
-    const { product, brands, ...rest } = ideas
+    const { product, brands, here, products, ...rest } = ideas
+    if (here !== undefined) {
+      session.here = here
+    }
+    if (products) {
+      session.products = products
+    }
     if (product) {
       session.product = product
     }

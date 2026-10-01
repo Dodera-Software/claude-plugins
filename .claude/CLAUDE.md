@@ -36,7 +36,7 @@ skills/make/SKILL.md              the workflow Claude follows: brief (questionna
 skills/website/SKILL.md           /video-kit:website: asks for the address, then the make workflow in website mode
 skills/changelog/                 /video-kit:changelog (what's-new videos from recent changes) and release-video.yml, a GitHub Action template
 skills/voiceover/SKILL.md         /video-kit:voiceover: a narrator for an existing video, or a new video with one
-skills/make/references/*.md       details SKILL.md points to: direction (inventing each video), browser (the guided flow), interview (the directed brief), scenes, product-scenes, 3d, style, pacing, audio, voice, brand, recipes, capture, website
+skills/make/references/*.md       details SKILL.md points to: sources (what the video is about, where the product is), direction (inventing each video), browser (the guided flow), interview (the directed brief), scenes, product-scenes, 3d, style, pacing, audio, voice, brand, recipes, capture, website
 skills/make/template/             the studio copied into a product repo as video/
   src/kit/                        shared: motion helpers, brand context, components, scenes, transitions, defineVideo
   src/kit/three/                  depth: cameraAt, Space/Place (DOM in 3D), Stage3D/Logo3D (three.js)
@@ -247,6 +247,11 @@ bundled ffmpeg (it has no `fps` filter; use `-r`):
 - **The quality bar is in the skill**, not only in reviews: style.md's "never AI slop" checklist
   runs before stills are shown, and the directed interview (references/interview.md) exists
   because the person's vision, not the tool, is what makes a video good.
+- **The first step asks what the video is about**, never guesses from the folder: people keep
+  videos in a folder of their own with the code elsewhere (another folder, GitHub) or none (a
+  website, just an idea). references/sources.md; the browser asks it on its first page and posts
+  `source` at once so Claude starts reading. Code elsewhere is only read, never written; a GitHub
+  copy is temporary; `video/products.json` remembers each product's source for the next video.
 - **Every video is invented, not assembled.** Videos built from the kit's scene list all came out
   the same (chat pile-up, word swap, steps, list, end card), and a pixel-art reference the person
   gave produced none of its style, because the link was read as a page, never watched.

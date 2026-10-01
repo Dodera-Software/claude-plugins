@@ -2,14 +2,11 @@
 // click than type. A brief in a few simple steps, then Claude's progress, the storyboard and the
 // stills to review, then the editor. Claude does the work in Claude Code and talks to this page
 // through session.json (scripts/session.mjs); the page only shows and asks.
-import { loadFont } from '@remotion/google-fonts/Inter'
-import { Player } from '@remotion/player'
 import {
-  ArrowLeft, ArrowRight, Check, Clapperboard, Film, Globe, ImagePlus, Layers, Link2, LoaderCircle, Megaphone,
+  ArrowLeft, ArrowRight, Check, Clapperboard, Film, Folder, FolderCode, GitBranch, Globe, Lightbulb, ImagePlus, Layers, Link2, LoaderCircle, Megaphone,
   MessageSquare, Mic, MonitorPlay, Pause, Play, Rocket, Send, Sparkles, Upload, Users, VolumeX, X
 } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { defineVideo, TitleCard, titleCardFrames, WordSwap, wordSwapFrames, type Brand, type LookName } from '../kit'
 import { api, Banner, Empty, pushToast, Segmented } from './main'
 
 // ---------------------------------------------------------------------------------------------
@@ -24,6 +21,9 @@ export type Session = {
   product: string | null
   suggestions: { audiences?: string[], messages?: string[], mustShow?: string[], actions?: string[] }
   brands: { slug: string, name: string, domain?: string }[]
+  /** Whether this folder has the product's code; products this folder made videos about before. */
+  here?: boolean | null
+  products?: { name: string, source: Source }[]
   brief: Brief | null
   steps: Step[]
   messages: Message[]
@@ -34,8 +34,12 @@ export type Session = {
 }
 type Idea = { title: string, text?: string, pictures?: string[], link?: string }
 
+/** What the video is about: this folder's code, code elsewhere, a website, or just an idea. */
+type Source = { kind: 'here' | 'folder' | 'github' | 'website' | 'idea' | 'known', value: string }
+
 type Reference = { url?: string, file?: string, name?: string, likes: string[], note: string }
 type Brief = {
+  source: Source
   kind: string
   website: string
   audience: string
@@ -57,6 +61,7 @@ type Brief = {
 }
 
 const BLANK: Brief = {
+  source: { kind: 'here', value: '' },
   kind: '', website: '', audience: '', message: '', action: '', references: [],
   feel: { pace: '', tone: '', style: '' }, look: 'auto', form: 'auto', sound: 'silent', voice: '',
   formats: ['wide'], length: 'auto', languages: ['English'], mustShow: '', avoid: '', brand: '', inspireMe: true
@@ -98,76 +103,6 @@ function Question({ title, hint, children }: { title: string, hint?: string, chi
       {hint && <p className="hint-text">{hint}</p>}
       {children}
     </div>
-  )
-}
-
-// ---------------------------------------------------------------------------------------------
-// The four looks, shown moving: one made-up product in each, so people pick by eye, not by name.
-
-const { fontFamily } = loadFont('normal', { weights: ['400', '500', '600', '700', '800'], subsets: ['latin'] })
-
-function DemoLogo({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" style={{ display: 'block', flexShrink: 0 }}>
-      <rect width="64" height="64" rx="16" fill="#4f46e5" />
-      <path d="M20 42 L32 20 L44 42" fill="none" stroke="#fff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-const DEMO_BRAND: Brand = {
-  name: 'Your product',
-  domain: 'yourproduct.com',
-  fontFamily,
-  colors: {
-    canvas: '#f7f7f8', sheet: '#ffffff', text: '#18181b', toned: '#3f3f46', muted: '#71717a', border: '#e4e4e7',
-    accent: '#4f46e5', accentSoft: '#e0e7ff', accentInk: '#312e81', highlight: '#fef08a', subtle: '#eef2ff'
-  },
-  shadow: { card: '0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08)', floating: '0 2px 6px rgba(0,0,0,.08), 0 24px 64px rgba(0,0,0,.14)' },
-  Logo: DemoLogo
-}
-
-const LOOKS: [LookName, string, string][] = [
-  ['editorial', 'Editorial', 'Calm, spacious and premium'],
-  ['bold', 'Bold', 'Your colour fills the screen, big type, fast'],
-  ['technical', 'Technical', 'Dark, precise, for developer products'],
-  ['playful', 'Playful', 'Bright, bouncy and friendly']
-]
-
-const swap = { lead: 'We make', words: ['launch films', 'feature demos', 'social clips'], eyebrow: 'Your product' }
-const title = { eyebrow: 'Your product', title: 'Every task finds its owner', sub: 'A short preview of this look' }
-const LOOK_PREVIEWS = Object.fromEntries(LOOKS.map(([look]) => [look, defineVideo({
-  id: `LookPreview-${look}`,
-  brand: DEMO_BRAND,
-  look,
-  cover: false,
-  scenes: [
-    { component: () => <WordSwap {...swap} />, frames: wordSwapFrames(swap) },
-    { component: () => <TitleCard {...title} />, frames: titleCardFrames(title) }
-  ]
-})]))
-
-function LookCard({ look, name, text, on, onPick }: { look: LookName, name: string, text: string, on: boolean, onPick: () => void }) {
-  const video = LOOK_PREVIEWS[look]
-  return (
-    <button className={`look-card ${on ? 'is-on' : ''}`} onClick={onPick}>
-      <span className="look-preview">
-        <Player
-          component={video.component}
-          durationInFrames={video.durationInFrames}
-          fps={video.fps}
-          compositionWidth={video.width}
-          compositionHeight={video.height}
-          style={{ width: '100%', aspectRatio: '16 / 9' }}
-          autoPlay
-          loop
-          initiallyMuted
-          acknowledgeRemotionLicense
-        />
-      </span>
-      <span className="look-name"><strong>{name}</strong>{on && <Check size={14} />}</span>
-      <em>{text}</em>
-    </button>
   )
 }
 
@@ -224,16 +159,30 @@ const KINDS: [string, ReactNode, string, string][] = [
   ['teaser', <Megaphone key="m" size={20} />, 'Feature teaser', '15–30 seconds about one feature'],
   ['demo', <MonitorPlay key="d" size={20} />, 'Feature demo', 'One feature working in the real app'],
   ['social', <Film key="f" size={20} />, 'Social clip', '10–20 seconds, one moment, loops'],
-  ['changelog', <Layers key="l" size={20} />, "What's new", 'Your latest changes, for a release'],
-  ['website', <Globe key="g" size={20} />, 'From a website', 'Any product, from its public website']
+  ['changelog', <Layers key="l" size={20} />, "What's new", 'Your latest changes, for a release']
 ]
 
-const BRIEF_STEPS = ['What', 'Who', 'Inspiration', 'Look', 'Sound', 'Where', 'Details', 'Review']
+// Where Claude learns about the product. "This project" only when the folder has code.
+const SOURCES: [Source['kind'], ReactNode, string, string, string?][] = [
+  ['here', <FolderCode key="h" size={20} />, 'This project', 'The code in the folder Claude is open in'],
+  ['folder', <Folder key="f" size={20} />, 'Code in another folder', 'A project somewhere on this computer', '/Users/you/Work/your-product'],
+  ['github', <GitBranch key="g" size={20} />, 'A GitHub project', 'Claude reads a copy, then deletes it', 'github.com/your-company/your-product'],
+  ['website', <Globe key="w" size={20} />, 'A website', 'Any product, from its public website', 'yourproduct.com'],
+  ['idea', <Lightbulb key="i" size={20} />, 'Just an idea', 'No product to read: describe it in your words']
+]
+
+function sourceReady(source: Source) {
+  return source.kind === 'here' || Boolean(source.value.trim())
+}
+
+const BRIEF_STEPS = ['What', 'Who', 'Inspiration', 'Feel', 'Sound', 'Where', 'Details', 'Review']
 
 function BriefWizard({ session, onDone, step, setStep }: { session: Session, onDone: (brief: Brief) => void, step: number, setStep: (step: number) => void }) {
   const [brief, setBrief] = useState<Brief>(() => {
     try {
-      return { ...BLANK, ...JSON.parse(localStorage.getItem(DRAFT) ?? '{}') }
+      const saved = { ...BLANK, ...JSON.parse(localStorage.getItem(DRAFT) ?? '{}') } as Brief
+      // A draft from before "What's the video about?" kept a website as a kind of video.
+      return saved.kind === 'website' ? { ...saved, kind: '', source: { kind: 'website', value: saved.website } } : saved
     } catch {
       return BLANK
     }
@@ -268,20 +217,74 @@ function BriefWizard({ session, onDone, step, setStep }: { session: Session, onD
       setUploading(false)
     }
   }
-  const canGoOn = step !== 0 || Boolean(brief.kind && (brief.kind !== 'website' || brief.website.trim()))
+  const sources = SOURCES.filter(([kind]) => kind !== 'here' || session.here !== false)
+  const canGoOn = step !== 0 || Boolean(brief.kind && brief.kind !== 'website' && sourceReady(brief.source))
+  const setSource = (source: Source) => set({ source, website: source.kind === 'website' ? source.value : '' })
+  const pickCode = async () => {
+    try {
+      const { path } = await api<{ path: string | null }>('/api/pick-folder', { purpose: 'code' })
+      if (path) {
+        setSource({ kind: 'folder', value: path })
+      }
+    } catch (caught) {
+      pushToast('error', (caught as Error).message)
+    }
+  }
+  const next = () => {
+    // Claude starts reading the product as soon as it knows where it is.
+    if (step === 0) {
+      api('/api/session/source', { source: brief.source }).catch(() => {})
+    }
+    setStep(step + 1)
+  }
   const screens = [
     // 1. What
     <div key="what">
+      <Question title="What's the video about?" hint="Where Claude learns about your product. It only reads; it never changes anything there.">
+        <div className="source-pick">
+          {session.products?.length ? (
+            <div className="choice-grid two">
+              {session.products.map(product => (
+                <Choice
+                  key={product.name}
+                  compact
+                  on={brief.source.kind === 'known' && brief.source.value === product.name}
+                  onClick={() => setSource({ kind: 'known', value: product.name })}
+                  icon={<Clapperboard size={17} />}
+                  title={product.name}
+                  text={`Like last time: ${product.source.kind === 'idea' ? 'from your description' : product.source.value || 'this project'}`}
+                />
+              ))}
+            </div>
+          ) : null}
+          <div className="choice-grid">
+            {sources.map(([kind, icon, name, text]) => (
+              <Choice key={kind} on={brief.source.kind === kind} onClick={() => setSource({ kind, value: brief.source.kind === kind ? brief.source.value : '' })} icon={icon} title={name} text={text} />
+            ))}
+          </div>
+          {brief.source.kind === 'folder' && (
+            <div className="link-add">
+              <Folder size={16} />
+              <input placeholder={SOURCES[1][4]} value={brief.source.value} onChange={event => setSource({ kind: 'folder', value: event.target.value })} />
+              <button className="secondary" onClick={pickCode}>Choose…</button>
+            </div>
+          )}
+          {(brief.source.kind === 'github' || brief.source.kind === 'website') && (
+            <div className="link-add">
+              <Link2 size={16} />
+              <input placeholder={SOURCES.find(([kind]) => kind === brief.source.kind)?.[4]} value={brief.source.value} onChange={event => setSource({ kind: brief.source.kind, value: event.target.value })} />
+            </div>
+          )}
+          {brief.source.kind === 'idea' && (
+            <textarea rows={3} placeholder="What is it, who is it for, and what should people know? “A 30-second invite to our customer day on 12 March in Bucharest”" value={brief.source.value} onChange={event => setSource({ kind: 'idea', value: event.target.value })} />
+          )}
+        </div>
+      </Question>
       <Question title="What are we making?" hint="Pick the closest; you can describe it in your own words later.">
         <div className="choice-grid">
           {KINDS.map(([value, icon, name, text]) => <Choice key={value} on={brief.kind === value} onClick={() => set({ kind: value })} icon={icon} title={name} text={text} />)}
         </div>
       </Question>
-      {brief.kind === 'website' && (
-        <Question title="Which website?">
-          <input placeholder="yourproduct.com" value={brief.website} onChange={event => set({ website: event.target.value })} />
-        </Question>
-      )}
     </div>,
     // 2. Who
     <div key="who">
@@ -360,19 +363,13 @@ function BriefWizard({ session, onDone, step, setStep }: { session: Session, onD
       </Question>
     </div>,
     // 4. Look
-    <div key="look">
+    <div key="feel">
       <Question title="How should it feel?">
         <div className="feel">
           <Segmented value={brief.feel.pace} onChange={value => set({ feel: { ...brief.feel, pace: value } })} options={[['calm', 'Calm'], ['energetic', 'Energetic']]} />
           <Segmented value={brief.feel.tone} onChange={value => set({ feel: { ...brief.feel, tone: value } })} options={[['serious', 'Serious'], ['playful', 'Playful']]} />
           <Segmented value={brief.feel.style} onChange={value => set({ feel: { ...brief.feel, style: value } })} options={[['premium', 'Premium'], ['friendly', 'Friendly']]} />
         </div>
-      </Question>
-      <Question title="Which look?" hint="Each one plays below. Not sure? Let Claude choose from your product.">
-        <div className="look-grid">
-          {LOOKS.map(([look, name, text]) => <LookCard key={look} look={look} name={name} text={text} on={brief.look === look} onPick={() => set({ look })} />)}
-        </div>
-        <Choice compact on={brief.look === 'auto'} onClick={() => set({ look: 'auto' })} icon={<Sparkles size={16} />} title="Let Claude choose" text="From your product's own site and feel" />
       </Question>
       <Question title="What kind of video?">
         <div className="choice-grid three">
@@ -439,12 +436,12 @@ function BriefWizard({ session, onDone, step, setStep }: { session: Session, onD
       <Question title="Ready to start?" hint="Claude reads your product, writes a storyboard and shows it to you here before making anything.">
         <dl className="review">
           {[
+            ['About', brief.source.kind === 'known' ? brief.source.value : `${SOURCES.find(([kind]) => kind === brief.source.kind)?.[2] ?? '—'}${brief.source.value && brief.source.kind !== 'idea' ? `: ${brief.source.value}` : ''}`, 0],
             ['What', KINDS.find(([value]) => value === brief.kind)?.[2] ?? '—', 0],
             ['For', brief.audience || 'Claude decides', 1],
             ['Message', brief.message || 'Claude suggests', 1],
             ['After watching', brief.action || '—', 1],
             ['Inspiration', [brief.references.length ? `${brief.references.length} video${brief.references.length > 1 ? 's' : ''}` : '', brief.inspireMe ? 'show me ideas' : ''].filter(Boolean).join(', ') || 'None', 2],
-            ['Look', brief.look === 'auto' ? 'Claude chooses' : brief.look, 3],
             ['Kind', { chapters: 'Scene by scene', film: 'Cinematic, with 3D', auto: 'Claude chooses' }[brief.form] ?? brief.form, 3],
             ['Sound', brief.sound === 'narrator' ? `Narrator${brief.voice ? ` (${VOICES.find(([voice]) => voice === brief.voice)?.[1]})` : ''}` : 'Silent', 4],
             ['Shapes', brief.formats.join(', ') || 'Wide', 5],
@@ -476,7 +473,7 @@ function BriefWizard({ session, onDone, step, setStep }: { session: Session, onD
         <div className="wizard-actions">
           {step > 0 && <button className="ghost-button" onClick={() => setStep(step - 1)}><ArrowLeft size={15} /> Back</button>}
           {step < BRIEF_STEPS.length - 1
-            ? <button className="primary" disabled={!canGoOn} onClick={() => setStep(step + 1)}>Next <ArrowRight size={15} /></button>
+            ? <button className="primary" disabled={!canGoOn} onClick={next}>Next <ArrowRight size={15} /></button>
             : <button className="primary" onClick={() => onDone(brief)}><Sparkles size={15} /> Start making it</button>}
         </div>
       </div>
@@ -730,7 +727,7 @@ function Ideas({ session }: { session: Session }) {
 // ---------------------------------------------------------------------------------------------
 // The studio
 
-const BRIEF_NAMES = ["What we're making", "Who it's for", 'Videos you like', 'Look and feel', 'Sound', 'Where it goes', 'Details', 'Review']
+const BRIEF_NAMES = ["What it's about", "Who it's for", 'Videos you like', 'Feel', 'Sound', 'Where it goes', 'Details', 'Review']
 const LATER: [Session['stage'], string, string][] = [
   ['working', 'Claude gets to work', 'Reads your product and plans'],
   ['ideas', 'Pick a direction', 'A few styles to choose from'],

@@ -13,7 +13,7 @@ skill's template: `${CLAUDE_PLUGIN_ROOT}/skills/make/template` (inside the claud
 itself, `plugins/video-kit/skills/make/template`). It should look like a careful motion designer made
 it for this product: restrained, readable, specific, with one small joke per scene at most.
 Everything in it must be true of the product as the code shows it today, or, in website mode, as
-its website says.
+its website says, or, for an idea, as the person told it.
 
 ## Who you're working with
 
@@ -64,6 +64,15 @@ said "in the chat" or "in the browser"):
 | --- | --- | --- |
 | Where | Where would you like to make it? | In your browser (recommended): a guided page, step by step: pick what you want, paste videos you like, hear the voices, review the storyboard and pictures, then edit and export · Here in the chat: I ask a few questions here and show you pictures |
 
+**Then, what it's about,** in the same round (the browser asks it on its first page instead).
+Never decide it by looking at the folder: people often keep videos in a folder of their own, with
+the code elsewhere or no code at all (references/sources.md). Skip it only when the request
+already says (a path, a link, a website, "this project", or a described idea).
+
+| Header | Question | Options (label: description) |
+| --- | --- | --- |
+| About | What's the video about? | The products in `video/products.json` first, if any ("Acme: like last time") · This project: the code in this folder (only when it has code; recommended then) · Code elsewhere: a folder on this computer or a GitHub link, which you write in "Other" · A website: its address in "Other" · Just an idea: describe it in "Other" |
+
 **In the browser:** get ready first (step 2), then follow references/browser.md: the brief,
 progress, storyboard, stills and editor all happen in the page, and you work as usual, hearing
 what they do there. **In the chat:** carry on below; before making the video, step 7 still offers
@@ -96,11 +105,10 @@ without having to know to ask:
 | Style | What style? | Let me choose (recommended): I pick what suits the product and say why in the plan · Scene by scene: clear chapters, each with its own point · Cinematic, with 3D: one continuous camera journey through your product, 3D moments, words over the picture |
 | Sound | A narrator, or silent? | Silent (recommended): no sound at all, made to be watched muted · Narrator voice: a voice tells the story, recorded on this computer with free voices, English only |
 
-**No code here** (the folder isn't a software project, or the person says they only have the
-website): this is website mode (references/website.md), the same as `/video-kit:website`. Ask for
-the website address in the first round if it wasn't given, and read the site before the second
-round, as the quick look below. With code and a website both, use the code, and say in the
-storyboard that the website could be the source instead.
+**Where to read** follows their answer to "What's the video about?" (references/sources.md): this
+project's code, code in another folder or on GitHub, a website (website mode, references/website.md,
+the same as `/video-kit:website`; read the site before the second round, as the quick look below),
+or just their idea. Remember it in `video/products.json`.
 
 Then a quick look at the product (navigation, pages, landing copy, design, README, recent changes:
 minutes, not the full investigation) and one more round, with real options:
@@ -108,7 +116,7 @@ minutes, not the full investigation) and one more round, with real options:
 | Header | Question | Options |
 | --- | --- | --- |
 | Feature / Story | Which feature? (teaser, clip) or Which story? (launch film) | 3–4 of the product's actual features with a one-line description each, newest or most distinctive first; or 2–3 story angles from the product's own copy |
-| Look | How should it look? | The four looks, the one that fits this product first, marked "(Recommended)": Calm and elegant: lots of space, light type, gentle motion · Bold: your brand colour fills the screen, big type, fast · Technical: dark, a subtle grid, code-style labels · Playful: soft shapes, bouncy motion, a light joke |
+| Feel | How should it feel? | Let me choose (recommended): from your product · Calm and premium · Bold and energetic · Playful and friendly. The look itself comes from the direction they pick later (references/direction.md), so don't ask for one |
 | Language | In which language? (multiple choice allowed) | English (default) · the other languages the product itself ships in (from its translation files). Only when it ships more than one; with a narrator, say that the voice is English |
 | Your ideas | Anything you'd like to see in it? | Surprise me (recommended): I'll come up with the idea · I'll describe it: the scenes or the idea in your own words (they write it in "Other" or in the chat). When Language takes the fourth place, ask this in one plain line after the round instead |
 | Screens | How should the product appear? | Recreated from the code (recommended): nothing needs to run · The real app, running: screenshots, and short recordings where something moves; I start the product on this computer with example data; needs a demo login · My own screen recordings: you give me recordings you made, and I build around them |
@@ -152,8 +160,9 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
   docker.com/products/docker-desktop; on Windows its installer also sets up WSL 2, and may ask to
   restart the computer), that installing may need an administrator, and that you'll carry on as
   soon as it's installed. Everything up to the storyboard can go ahead meanwhile.
-- **The studio:** videos live with the product, in a `video/` folder at the project root (another
-  name if that's taken), whatever the video is about. If it isn't there, copy the template to it without `node_modules` and
+- **The studio:** videos live in a `video/` folder in the folder Claude is open in (another name
+  if that's taken), whatever the video is about: the product's repo, or a folder they keep for
+  their videos. Never in a code folder they only pointed to (references/sources.md). If it isn't there, copy the template to it without `node_modules` and
   `out`, the same way on every system:
   `node -e "const [f,t]=process.argv.slice(1);require('fs').cpSync(f,t,{recursive:true,filter:p=>!['node_modules','out'].includes(require('path').basename(p))})" "<template>" video`,
   then `npm install`
@@ -183,6 +192,8 @@ Check what's needed before doing any work, so nobody finds out after 20 minutes:
 A video is only as good as what you know about the product. Read the code until you could explain
 it to a new hire. For a large project, send an Explore agent per area.
 
+- **Where:** the source they named (references/sources.md); with code elsewhere, read it by its
+  full path and never write there.
 - **What it is and for whom:** README, docs, landing or marketing pages, translation files, store
   descriptions, the first screen a new user sees.
 - **What it does today:** pages, navigation, API endpoints, integrations, feature flags, changelog

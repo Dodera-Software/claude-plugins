@@ -452,13 +452,6 @@ kbd { font: 500 12px Inter, system-ui, sans-serif; color: var(--text); backgroun
 .reference-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-weight: 500; }
 .feel { display: flex; gap: 10px; flex-wrap: wrap; }
 .feel .segmented button { padding: 6px 16px; font-size: 13px; }
-.look-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.look-card { flex-direction: column; align-items: stretch; gap: 8px; padding: 8px 8px 12px; border-radius: 14px; background: var(--surface); border-color: var(--line-strong); text-align: left; }
-.look-card:hover { box-shadow: var(--shadow); }
-.look-card.is-on { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
-.look-preview { display: block; border-radius: 9px; overflow: hidden; background: var(--surface-3); pointer-events: none; }
-.look-name { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; font-size: 14px; }
-.look-card em { font-style: normal; color: var(--muted); font-size: 12.5px; padding: 0 4px; }
 .voice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .voice-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; }
 .voice-card:hover { box-shadow: var(--shadow); }
@@ -625,3 +618,7 @@ kbd { font: 500 12px Inter, system-ui, sans-serif; color: var(--text); backgroun
 .idea.is-on .idea-check { background: var(--accent); border-color: var(--accent); }
 .dialog-input { width: 100%; margin: 4px 0 14px; padding: 10px 12px; font-size: 14px; border-radius: 10px; }
 .video-pick .icon-button { margin-left: -4px; }
+
+/* What the video is about: the choices, then where exactly */
+.source-pick { display: flex; flex-direction: column; gap: 12px; }
+.source-pick .choice.is-compact { margin-top: 0; }
