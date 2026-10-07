@@ -1,4 +1,4 @@
-# video-kit
+# video-kit: a Claude Code plugin for product videos
 
 Launch videos, feature teasers, social clips and "what's new" videos for **your** product, made
 by Claude from your product's own code, or just its website. No video editor and no design skills

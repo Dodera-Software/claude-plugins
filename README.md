@@ -1,7 +1,10 @@
-# Dodera Software's Claude Code plugins
+# Claude Code plugins for product videos and PR podcasts
 
-A [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugins/install). Add it once and
-every plugin here shows up in `/plugin` → Discover.
+Dodera Software's [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugins/install).
+**video-kit** is a Claude Code plugin that makes product videos (launch videos, promo and demo
+videos, feature teasers, social clips) from your code, your website or just an idea, rendered with
+Remotion. **pr-podcast** turns pull requests into two-voice audio episodes. Add the marketplace once
+and every plugin here shows up in `/plugin` → Discover.
 
 ```
 /plugin marketplace add Dodera-Software/claude-plugins
